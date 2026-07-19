@@ -46,6 +46,45 @@ const createRateGate = (minIntervalMs: number) => {
   };
 };
 
+/**
+ * Registered separately from the rest of search because it runs entirely
+ * locally — no API call, no credentials, no cost. It stays available on an
+ * unconfigured server, where getting a query right for free is the most useful
+ * thing left to do.
+ */
+export const registerQueryBuilderTool = (server: McpServer): void => {
+  server.registerTool(
+    "x_build_search_query",
+    {
+      description:
+        "Build an X search query from structured parts and explain each operator it used. Runs " +
+        "entirely locally: no API call, no cost, no credentials. Use this to get the query right " +
+        "for free, then pass the result to x_count_recent and only then to x_search_recent.",
+      inputSchema: {
+        allWords: z.string().optional().describe('Words that must all appear, e.g. "rust async".'),
+        exactPhrase: z.string().optional().describe("A phrase that must appear verbatim."),
+        anyWords: z.array(z.string()).optional().describe("At least one of these must appear."),
+        noneWords: z.array(z.string()).optional().describe("None of these may appear."),
+        hashtags: z.array(z.string()).optional().describe('Hashtags, with or without "#".'),
+        from: z.array(usernameLike()).optional().describe("Only posts by these handles."),
+        to: z.array(usernameLike()).optional().describe("Only replies to these handles."),
+        mentioning: z.array(usernameLike()).optional().describe("Only posts mentioning these."),
+        lang: z.string().optional().describe('BCP-47 language code, e.g. "en", "fr", "ja".'),
+        hasMedia: z.boolean().optional().describe("Only posts with a photo or video."),
+        hasLinks: z.boolean().optional().describe("Only posts containing a link."),
+        isReply: z.boolean().optional().describe("true to require replies, false to exclude them."),
+        isRetweet: z
+          .boolean()
+          .optional()
+          .describe("true to require reposts, false to exclude them. False is the usual choice."),
+        isQuote: z.boolean().optional().describe("true to require quote posts, false to exclude."),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (args) => wrap(async () => buildSearchQuery(args)),
+  );
+};
+
 export const registerSearchTools = (
   server: McpServer,
   client: XApiClient,
@@ -171,37 +210,6 @@ export const registerSearchTools = (
             : {}),
         };
       }),
-  );
-
-  server.registerTool(
-    "x_build_search_query",
-    {
-      description:
-        "Build an X search query from structured parts and explain each operator it used. Runs " +
-        "entirely locally: no API call, no cost. Use this to get the query right for free, then " +
-        "pass the result to x_count_recent and only then to x_search_recent.",
-      inputSchema: {
-        allWords: z.string().optional().describe('Words that must all appear, e.g. "rust async".'),
-        exactPhrase: z.string().optional().describe("A phrase that must appear verbatim."),
-        anyWords: z.array(z.string()).optional().describe("At least one of these must appear."),
-        noneWords: z.array(z.string()).optional().describe("None of these may appear."),
-        hashtags: z.array(z.string()).optional().describe('Hashtags, with or without "#".'),
-        from: z.array(usernameLike()).optional().describe("Only posts by these handles."),
-        to: z.array(usernameLike()).optional().describe("Only replies to these handles."),
-        mentioning: z.array(usernameLike()).optional().describe("Only posts mentioning these."),
-        lang: z.string().optional().describe('BCP-47 language code, e.g. "en", "fr", "ja".'),
-        hasMedia: z.boolean().optional().describe("Only posts with a photo or video."),
-        hasLinks: z.boolean().optional().describe("Only posts containing a link."),
-        isReply: z.boolean().optional().describe("true to require replies, false to exclude them."),
-        isRetweet: z
-          .boolean()
-          .optional()
-          .describe("true to require reposts, false to exclude them. False is the usual choice."),
-        isQuote: z.boolean().optional().describe("true to require quote posts, false to exclude."),
-      },
-      annotations: { readOnlyHint: true },
-    },
-    async (args) => wrap(async () => buildSearchQuery(args)),
   );
 
   // Full-archive search is a paid-tier endpoint; registering it when it cannot

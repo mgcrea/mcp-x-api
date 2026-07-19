@@ -79,15 +79,14 @@ const ConfigSchema = z
   })
   .strict()
   .superRefine((cfg, ctx) => {
-    if (!cfg.bearerToken && !cfg.clientId) {
-      ctx.addIssue({
-        code: "custom",
-        message:
-          "No credentials. Set X_API_BEARER_TOKEN for public reads (X developer portal → your " +
-          "app → Keys and tokens → Bearer Token), and/or X_API_CLIENT_ID to enable the OAuth2 " +
-          "user flow needed for bookmarks, the home timeline and API writes.",
-      });
-    }
+    // Deliberately NOT an error when no credentials are set. An MCP server that
+    // exits on startup shows up in the client as a bare "Connection closed",
+    // with stderr swallowed — so the one message that would have explained the
+    // problem never reaches anyone. Worse, it makes the free tools
+    // (x_compose_post, x_validate_post, x_build_search_query) unreachable even
+    // though they need no credentials at all, and leaves no way to discover
+    // that OAuth needs X_API_CLIENT_ID. The server starts; `x_auth_status`
+    // and the startup banner report what is missing.
     if (cfg.writeBackend === "api" && !cfg.clientId) {
       ctx.addIssue({
         code: "custom",
@@ -270,6 +269,37 @@ export const loadConfig = (
     pricing: file.pricing,
   });
 };
+
+/** Whether anything at all is configured that can reach the X API. */
+export const hasApiCredentials = (config: Config): boolean =>
+  Boolean(config.bearerToken ?? config.clientId);
+
+/**
+ * What to do when nothing is configured. Returned by `x_auth_status` and
+ * printed at startup, because this is the state a first-time user lands in and
+ * the server can no longer signal it by refusing to start.
+ */
+export const setupInstructions = (config: Config): string[] => [
+  "No X credentials are configured, so the tools that call the X API are not registered.",
+  "The free local tools still work: x_compose_post (posts via a browser click, no credentials, " +
+    "no cost), x_validate_post, and x_build_search_query.",
+  // The portal moved with the February 2026 pricing change; developer.x.com is
+  // legacy, and sending people there is the fastest way to lose them.
+  "Create an app at https://console.x.com (this replaced the old developer.x.com portal). Both " +
+    "credentials below are on the app's Keys and Tokens screen.",
+  "To enable reading and search, set X_API_BEARER_TOKEN to the app's Bearer Token. That alone " +
+    "covers post lookup, search, profiles and timelines — OAuth is not needed for any of it.",
+  "To enable bookmarks, your home timeline and API writes, also set X_API_CLIENT_ID. When " +
+    "creating the app choose Type of App = Native App: that makes it a public PKCE client with " +
+    `no client secret, which is what this server expects. Register the callback URL ` +
+    `${config.redirectUri} byte for byte (X's docs say to use 127.0.0.1 rather than localhost), ` +
+    "then run `x-api-mcp login` or call x_auth_login.",
+  "Enroll the app in the Pay-per-use package and the Production environment. An app left in the " +
+    "legacy Free/Development state logs in successfully and then fails every call with 403 " +
+    "client-not-enrolled.",
+  "Note that X removed its free tier on 2026-02-06: creating an app is free, but reads are " +
+    "pay-per-use and need prepurchased credits in the console.",
+];
 
 /**
  * The scopes actually requested at login. `tweet.write` is only asked for when

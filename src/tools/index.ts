@@ -3,12 +3,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { TokenProvider } from "../client/auth.js";
 import type { DayCache } from "../client/cache.js";
 import type { Ledger } from "../client/cost.js";
+import type { TokenStore } from "../client/tokens.js";
 import type { XApiClient } from "../client/x.js";
 import type { Pricing } from "../config.js";
 import { registerAuthTools } from "./auth.js";
 import { registerComposeTools } from "./compose.js";
 import { registerPostTools } from "./posts.js";
-import { registerSearchTools } from "./search.js";
+import { registerQueryBuilderTool, registerSearchTools } from "./search.js";
 import { registerTimelineTools } from "./timelines.js";
 import { registerUsageTools } from "./usage.js";
 import { registerUserTools } from "./users.js";
@@ -32,8 +33,21 @@ export type ToolContext = {
   cache: DayCache;
   ledger: Ledger;
   tokenProvider: TokenProvider;
+  /**
+   * False when neither a Bearer token nor an OAuth client id is configured. The
+   * server still starts and still serves the free local tools; the ones that
+   * would call the X API are simply not registered.
+   */
+  hasCredentials: boolean;
+  /** Setup guidance surfaced by x_auth_status when nothing is configured. */
+  setup?: string[] | undefined;
   /** Where the OAuth tokens live, for x_auth_status. Absent when OAuth is unconfigured. */
   tokenFile?: string | undefined;
+  /**
+   * The token file, so a user id discovered lazily can be written back and not
+   * re-fetched on every call. Absent when OAuth is unconfigured.
+   */
+  tokenStore?: TokenStore | undefined;
   /** Present only when a client id is configured; its presence registers the login tools. */
   login?: ((open: boolean) => Promise<LoginSummary>) | undefined;
   logout?: (() => void) | undefined;
@@ -57,11 +71,18 @@ export type LoginSummary = {
  * cannot be called at all.
  */
 export const registerTools = (server: McpServer, client: XApiClient, ctx: ToolContext): void => {
+  // Always available: these run locally and need no credentials at all. They are
+  // registered first and unconditionally so that an unconfigured server is still
+  // a useful one, rather than a connection that closes.
+  registerComposeTools(server, client, ctx);
+  registerAuthTools(server, ctx);
+  registerQueryBuilderTool(server);
+
+  if (!ctx.hasCredentials) return;
+
   registerPostTools(server, client, ctx);
   registerUserTools(server, client, ctx);
   registerSearchTools(server, client, ctx);
-  registerComposeTools(server, client, ctx);
-  registerAuthTools(server, ctx);
   registerUsageTools(server, client, ctx);
   // Bookmarks and the home timeline are unreachable without a user session, so
   // registering them Bearer-only would just hand the model two tools that

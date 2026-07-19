@@ -14,7 +14,7 @@ import { createOAuthClient, startLoginFlow } from "./client/oauth.js";
 import { createTokenStore, type TokenStore } from "./client/tokens.js";
 import { XApiClient } from "./client/x.js";
 import { openInBrowser } from "./compose/open.js";
-import { effectiveScopes, type Config } from "./config.js";
+import { effectiveScopes, hasApiCredentials, setupInstructions, type Config } from "./config.js";
 import { registerTools } from "./tools/index.js";
 
 export const SERVER_NAME = BUILD_INFO.name;
@@ -95,9 +95,12 @@ export const createServer = (opts: CreateServerOptions): CreatedServer => {
     cache,
     ledger,
     tokenProvider,
+    hasCredentials: hasApiCredentials(config),
+    ...(hasApiCredentials(config) ? {} : { setup: setupInstructions(config) }),
     ...(config.clientId
       ? {
           tokenFile: config.tokenFile,
+          tokenStore: store,
           login: async (open: boolean) => {
             const { tokens } = await startLoginFlow({
               config,

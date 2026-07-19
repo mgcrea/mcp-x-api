@@ -69,6 +69,49 @@ const connect = async (
   };
 };
 
+describe("with no credentials configured", () => {
+  // The regression that produced "MCP error -32000: Connection closed": the
+  // server used to exit on startup, taking the credential-free tools with it
+  // and leaving no way to discover what to configure.
+  it("still connects, and serves the tools that need no credentials", async () => {
+    const names = await (await connect({}, undefined, { realAuth: true })).toolNames();
+    expect(names).toEqual([
+      "x_auth_status",
+      "x_build_search_query",
+      "x_compose_post",
+      "x_validate_post",
+    ]);
+  });
+
+  it("does not register the tools that would call the X API", async () => {
+    const names = await (await connect({}, undefined, { realAuth: true })).toolNames();
+    for (const tool of ["x_get_post", "x_search_recent", "x_get_user", "x_usage_report"]) {
+      expect(names).not.toContain(tool);
+    }
+  });
+
+  it("composes a post for free, which is the whole point of still being up", async () => {
+    const h = await connect({}, undefined, { realAuth: true });
+    const res = await h.call("x_compose_post", {
+      text: "works with zero credentials",
+      open: false,
+    });
+    expect(res.valid).toBe(true);
+    expect(res.intent_url).toMatch(/^https:\/\/x\.com\/intent\/tweet\?/);
+    expect(h.fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("answers x_auth_status as a setup guide", async () => {
+    const res = await (await connect({}, undefined, { realAuth: true })).call("x_auth_status");
+    expect(res.configured).toBe(false);
+    expect(res.available_without_credentials).toContain("x_compose_post");
+    const setup = (res.setup as string[]).join(" ");
+    expect(setup).toContain("X_API_BEARER_TOKEN");
+    expect(setup).toContain("X_API_CLIENT_ID");
+    expect(setup).toContain("x-api-mcp login");
+  });
+});
+
 describe("tool registration matrix", () => {
   it("registers the read and free-compose tools with only a bearer token", async () => {
     const names = await (await connect()).toolNames();

@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 import { BUILD_INFO } from "./build-info.js";
 import { startLoginFlow } from "./client/oauth.js";
 import { openInBrowser } from "./compose/open.js";
-import { loadConfig } from "./config.js";
+import { hasApiCredentials, loadConfig, setupInstructions } from "./config.js";
 import { createServer } from "./server.js";
 
 // Everything goes to stderr: stdout is the MCP protocol channel, and a stray
@@ -96,6 +96,14 @@ const main = async (): Promise<void> => {
       `full-archive=${config.enableFullArchive ? "on" : "off"}, ` +
       `cache=${config.cacheEnabled ? "on" : "off"})`,
   );
+
+  // Connecting successfully but exposing only four tools is confusing unless we
+  // say why. The server no longer refuses to start over this, so the banner and
+  // x_auth_status are the only channels left.
+  if (!hasApiCredentials(config)) {
+    for (const line of setupInstructions(config)) stderrLogger.warn(line);
+    stderrLogger.warn("Call the x_auth_status tool for this same guidance inside your client.");
+  }
 
   const shutdown = (signal: string): void => {
     stderrLogger.warn(`received ${signal}, shutting down`);

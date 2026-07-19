@@ -8,8 +8,10 @@ import {
   DEFAULT_PRICING,
   DEFAULT_REDIRECT_URI,
   effectiveScopes,
+  hasApiCredentials,
   loadConfig,
   resolveConfigPath,
+  setupInstructions,
 } from "../src/config.js";
 
 let dir: string;
@@ -47,8 +49,18 @@ describe("loadConfig", () => {
     expect(loadConfig({ X_API_BEARER_TOKEN: "t" }, absent).defaultMaxResults).toBe(10);
   });
 
-  it("names both credentials when neither is set", () => {
-    expect(() => loadConfig({}, absent)).toThrow(/X_API_BEARER_TOKEN.*X_API_CLIENT_ID/s);
+  // An MCP server that exits on startup surfaces as a bare "Connection closed"
+  // with stderr swallowed, and takes the credential-free tools down with it.
+  it("loads with no credentials at all rather than throwing", () => {
+    const config = loadConfig({}, absent);
+    expect(config.bearerToken).toBeUndefined();
+    expect(config.clientId).toBeUndefined();
+    expect(hasApiCredentials(config)).toBe(false);
+  });
+
+  it("reports credentials once either one is set", () => {
+    expect(hasApiCredentials(loadConfig({ X_API_BEARER_TOKEN: "t" }, absent))).toBe(true);
+    expect(hasApiCredentials(loadConfig({ X_API_CLIENT_ID: "c" }, absent))).toBe(true);
   });
 
   it("rejects the paid write backend without a client id, pointing at the free one", () => {
@@ -112,6 +124,12 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ X_API_BEARER_TOKEN: "t" }, absent)).not.toThrow();
   });
 
+  it("still rejects the one combination that is a genuine misconfiguration", () => {
+    // Missing credentials is a state to guide out of; asking for the paid write
+    // backend without the credential it requires is a contradiction.
+    expect(() => loadConfig({ X_API_WRITE_BACKEND: "api" }, absent)).toThrow(/x-api-mcp login/);
+  });
+
   it("parses scopes from a comma- or space-separated env var", () => {
     const comma = loadConfig({ X_API_CLIENT_ID: "c", X_API_SCOPES: "a,b , c" }, absent);
     expect(comma.scopes).toEqual(["a", "b", "c"]);
@@ -155,6 +173,33 @@ describe("resolveConfigPath", () => {
   it("defaults the token file next to the config file", () => {
     const config = loadConfig({ X_API_BEARER_TOKEN: "t", XDG_CONFIG_HOME: "/xdg" }, absent);
     expect(config.tokenFile).toBe("/xdg/x-api/tokens.json");
+  });
+});
+
+describe("setupInstructions", () => {
+  it("names both credentials, the free tools, and the exact callback URL to register", () => {
+    const text = setupInstructions(loadConfig({}, absent)).join(" ");
+    expect(text).toContain("X_API_BEARER_TOKEN");
+    expect(text).toContain("X_API_CLIENT_ID");
+    expect(text).toContain("x_compose_post");
+    expect(text).toContain(DEFAULT_REDIRECT_URI);
+    // The stale-docs trap: people still expect a free tier.
+    expect(text).toMatch(/free tier on 2026-02-06/);
+  });
+
+  it("sends people to the current console, not the legacy developer portal", () => {
+    const text = setupInstructions(loadConfig({}, absent)).join(" ");
+    expect(text).toContain("console.x.com");
+    expect(text).not.toMatch(/developer\.x\.com\/en\/portal/);
+  });
+
+  it("names the two settings that are easy to get wrong", () => {
+    const text = setupInstructions(loadConfig({}, absent)).join(" ");
+    // Native App is what yields a public PKCE client with no secret.
+    expect(text).toContain("Native App");
+    // And the enrollment state that otherwise 403s every call after login.
+    expect(text).toMatch(/Pay-per-use/);
+    expect(text).toMatch(/client-not-enrolled/);
   });
 });
 

@@ -12,7 +12,8 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
       description:
         "Which credentials this server is holding: an app-only Bearer token (enough for public " +
         "reads and search), an OAuth2 user session (needed for bookmarks and the home timeline), " +
-        "or neither. Shows the logged-in handle, granted scopes and token expiry.",
+        "or neither. Shows the logged-in handle, granted scopes and token expiry. Call this " +
+        "first if the X API tools seem to be missing — it explains exactly what to configure.",
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },
@@ -20,7 +21,29 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
       wrap(async () => {
         const status = ctx.tokenProvider.describe();
         const mode = ctx.tokenFile ? fileMode(ctx.tokenFile) : undefined;
+
+        // The state a first-time user lands in. Answer it as a setup guide
+        // rather than a status dump, since the server can no longer signal this
+        // by refusing to start.
+        if (!ctx.hasCredentials) {
+          return {
+            configured: false,
+            app_only_bearer: false,
+            user: { authenticated: false, reason: "no credentials configured" },
+            can_read_public: false,
+            can_read_bookmarks: false,
+            available_without_credentials: [
+              "x_compose_post",
+              "x_validate_post",
+              "x_build_search_query",
+              "x_auth_status",
+            ],
+            setup: ctx.setup ?? [],
+          };
+        }
+
         return {
+          configured: true,
           app_only_bearer: status.app,
           user: status.user.authenticated
             ? {
