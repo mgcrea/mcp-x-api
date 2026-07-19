@@ -1,0 +1,73 @@
+{
+  "name": "@mgcrea/mcp-x-api",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for the X (Twitter) API v2",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "twitter",
+    "twitter-api",
+    "x",
+    "x-api"
+  ],
+  "license": "MIT",
+  "author": "Olivier Louvignes <olivier@mgcrea.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgcrea/mcp-x-api.git"
+  },
+  "bin": {
+    "x-api-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "start": "node dist/cli.js",
+    "login": "node dist/cli.js login",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "docker:build": "BUILDER=build scripts/docker-build.sh",
+    "docker:buildx": "BUILDER=buildx scripts/docker-build.sh",
+    "docker:push": "docker push mgcrea/mcp-x-api:latest && docker push mgcrea/mcp-x-api:$npm_package_version",
+    "docker:release": "BUILDER=buildx scripts/docker-build.sh --push",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "oxfmt": "^0.59.0",
+    "oxlint": "^1.74.0",
+    "tsdown": "^0.22.9",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.13.1"
+}

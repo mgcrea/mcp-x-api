@@ -1,0 +1,130 @@
+#!/usr/bin/env node
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { ZodError } from "zod";
+
+import { BUILD_INFO } from "./build-info.js";
+import { startLoginFlow } from "./client/oauth.js";
+import { openInBrowser } from "./compose/open.js";
+import { loadConfig } from "./config.js";
+import { createServer } from "./server.js";
+
+// Everything goes to stderr: stdout is the MCP protocol channel, and a stray
+// log line there corrupts the stream.
+const stderrLogger = {
+  debug: (...args: unknown[]) => {
+    if (process.env.X_API_DEBUG) console.error("[x-api-mcp]", ...args);
+  },
+  warn: (...args: unknown[]) => console.error("[x-api-mcp]", ...args),
+  error: (...args: unknown[]) => console.error("[x-api-mcp]", ...args),
+};
+
+const describeAuth = (config: ReturnType<typeof loadConfig>): string => {
+  const parts: string[] = [];
+  if (config.bearerToken) parts.push("bearer");
+  if (config.clientId) parts.push("oauth2");
+  return parts.length > 0 ? parts.join("+") : "none";
+};
+
+/**
+ * `login` / `logout` / `status` run and exit; anything else starts the stdio
+ * server. Handled before the transport is created, so these never write to the
+ * protocol channel.
+ */
+const runSubcommand = async (command: string): Promise<boolean> => {
+  if (!["login", "logout", "status"].includes(command)) return false;
+
+  const config = loadConfig();
+  const { store, tokenProvider } = createServer({ config, logger: stderrLogger });
+
+  if (command === "status") {
+    const status = tokenProvider.describe();
+    console.error(`app-only bearer: ${status.app ? "configured" : "not configured"}`);
+    console.error(
+      status.user.authenticated
+        ? `oauth2 user: @${status.user.username ?? "?"} (scopes: ${status.user.scopes.join(", ")}, ` +
+            `expires ${new Date(status.user.expiresAt).toISOString()})`
+        : `oauth2 user: not authenticated — ${status.user.reason}`,
+    );
+    console.error(`token file: ${config.tokenFile}`);
+    return true;
+  }
+
+  if (command === "logout") {
+    store.clear();
+    console.error(`Removed ${config.tokenFile}. The app-only Bearer token is unaffected.`);
+    return true;
+  }
+
+  if (!config.clientId) {
+    console.error(
+      "Cannot log in: X_API_CLIENT_ID is not set. Create an OAuth 2.0 app in the X developer " +
+        `portal, enable PKCE, and register this exact callback URL: ${config.redirectUri}`,
+    );
+    process.exit(1);
+  }
+
+  const { tokens } = await startLoginFlow({
+    config,
+    store,
+    openBrowser: openInBrowser,
+    logger: stderrLogger,
+  });
+  console.error(
+    `Logged in as @${tokens.username ?? "?"} (scopes: ${tokens.scopes.join(", ")}). ` +
+      `Refresh token stored in ${config.tokenFile} with mode 600.`,
+  );
+  return true;
+};
+
+const main = async (): Promise<void> => {
+  stderrLogger.warn(
+    `${BUILD_INFO.name}@${BUILD_INFO.version} (git ${BUILD_INFO.gitCommit} ${BUILD_INFO.gitCommitDate}, node ${process.version})`,
+  );
+
+  const command = process.argv[2];
+  if (command && (await runSubcommand(command))) return;
+
+  const config = loadConfig();
+  const { server } = createServer({ config, logger: stderrLogger });
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+
+  stderrLogger.warn(
+    `x-api-mcp connected (auth=${describeAuth(config)}, ` +
+      `writes=${config.allowWrites ? `ENABLED via ${config.writeBackend}` : "disabled"}, ` +
+      `compose=intent (free), ` +
+      `full-archive=${config.enableFullArchive ? "on" : "off"}, ` +
+      `cache=${config.cacheEnabled ? "on" : "off"})`,
+  );
+
+  const shutdown = (signal: string): void => {
+    stderrLogger.warn(`received ${signal}, shutting down`);
+    process.exit(0);
+  };
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+};
+
+/**
+ * A misconfiguration is the most likely first-run failure, and the config
+ * schema's messages are written to be read. Dumping a raw ZodError with a stack
+ * trace buries them, so unwrap it to just the messages — the stack tells the
+ * user nothing they can act on.
+ */
+const describeFatal = (err: unknown): string => {
+  if (err instanceof ZodError) {
+    return err.issues
+      .map((issue) => {
+        const path = issue.path.join(".");
+        return path ? `${path}: ${issue.message}` : issue.message;
+      })
+      .join("\n");
+  }
+  return err instanceof Error ? err.message : String(err);
+};
+
+main().catch((err: unknown) => {
+  console.error(`[x-api-mcp] ${describeFatal(err)}`);
+  if (process.env.X_API_DEBUG && err instanceof Error) console.error(err.stack);
+  process.exit(1);
+});
