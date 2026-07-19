@@ -1,3 +1,7 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it, vi } from "vitest";
@@ -524,6 +528,104 @@ describe("x_auth_status", () => {
     expect(res.user.authenticated).toBe(false);
     expect(res.can_read_public).toBe(true);
     expect(res.can_read_bookmarks).toBe(false);
+  });
+});
+
+describe("resolving your own user id", () => {
+  /** Stage a logged-in OAuth session on disk, optionally without a recorded id. */
+  const stageSession = (over: Record<string, unknown> = {}) => {
+    const dir = mkdtempSync(join(tmpdir(), "x-api-tools-"));
+    const tokenFile = join(dir, "tokens.json");
+    writeFileSync(
+      tokenFile,
+      JSON.stringify({
+        version: 1,
+        clientId: "cid",
+        scopes: ["tweet.read", "users.read", "bookmark.read", "offline.access"],
+        accessToken: "access-1",
+        refreshToken: "refresh-1",
+        expiresAt: Date.now() + 3_600_000,
+        obtainedAt: Date.now(),
+        username: "mgcrea",
+        ...over,
+      }),
+      { mode: 0o600 },
+    );
+    return { dir, tokenFile };
+  };
+
+  const env = (tokenFile: string) => ({
+    X_API_BEARER_TOKEN: "t",
+    X_API_CLIENT_ID: "cid",
+    X_API_TOKEN_FILE: tokenFile,
+  });
+
+  // The dead end this replaced: login tolerates /2/users/me failing, so the id
+  // can legitimately be absent — and telling the user to log in again would
+  // just hit the same flaky endpoint.
+  it("fetches the id from /2/users/me when the token file has none", async () => {
+    const { dir, tokenFile } = stageSession();
+    try {
+      const fetchMock = vi.fn(async (url: string) =>
+        String(url).includes("/2/users/me")
+          ? jsonResponse({ data: { id: "44196397", username: "mgcrea" } })
+          : jsonResponse({ data: [{ id: "1", text: "a bookmark" }] }),
+      );
+      const h = await connect(env(tokenFile), fetchMock, { realAuth: true });
+      const res = await h.call("x_get_bookmarks", {});
+
+      expect(res.isToolError).toBeFalsy();
+      expect(h.urls()[0]).toContain("/2/users/me");
+      expect(h.urls()[1]).toContain("/2/users/44196397/bookmarks");
+      expect(res.posts).toHaveLength(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes the id back, so the next call does not pay for it again", async () => {
+    const { dir, tokenFile } = stageSession();
+    try {
+      const fetchMock = vi.fn(async (url: string) =>
+        String(url).includes("/2/users/me")
+          ? jsonResponse({ data: { id: "44196397", username: "mgcrea" } })
+          : jsonResponse({ data: [] }),
+      );
+      const h = await connect(env(tokenFile), fetchMock, { realAuth: true });
+      await h.call("x_get_bookmarks", {});
+      await h.call("x_get_bookmarks", {});
+
+      expect(JSON.parse(readFileSync(tokenFile, "utf8")).userId).toBe("44196397");
+      expect(h.urls().filter((u) => u.includes("/2/users/me"))).toHaveLength(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("skips the lookup entirely when the id is already recorded", async () => {
+    const { dir, tokenFile } = stageSession({ userId: "44196397" });
+    try {
+      const fetchMock = vi.fn(async () => jsonResponse({ data: [] }));
+      const h = await connect(env(tokenFile), fetchMock, { realAuth: true });
+      await h.call("x_get_home_timeline", {});
+      expect(h.urls().some((u) => u.includes("/2/users/me"))).toBe(false);
+      expect(h.urls()[0]).toContain("/2/users/44196397/timelines/reverse_chronological");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("points at the enrollment trap when X will not identify the account", async () => {
+    const { dir, tokenFile } = stageSession();
+    try {
+      const fetchMock = vi.fn(async () => jsonResponse({ data: {} }));
+      const h = await connect(env(tokenFile), fetchMock, { realAuth: true });
+      const res = await h.call("x_get_bookmarks", {});
+      expect(res.isToolError).toBe(true);
+      expect(res.error).toMatch(/Pay-per-use.*Production|console\.x\.com/s);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
