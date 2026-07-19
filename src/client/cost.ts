@@ -137,7 +137,7 @@ export const createLedger = (opts: {
         disclaimer:
           "Estimated locally from X's published pay-per-use rates and counted only since this " +
           "process started — it is not persisted across restarts, and does not know about spend " +
-          "from other clients. The X developer portal is the authoritative record.",
+          "from other clients. The X developer console (console.x.com) is the authoritative record.",
       };
     },
   };

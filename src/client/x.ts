@@ -303,10 +303,16 @@ export class XApiClient {
       );
     }
     if (res.status === 403) {
+      // Ordered by what actually causes this. An app left in the legacy
+      // Free/Development state authenticates fine and then 403s on every
+      // user-context call, which reads as a scope problem and is not one —
+      // sending people to re-check scopes here wastes a lot of their time.
       return (
-        `${base} — authenticated, but your access tier or this token's scopes do not cover ` +
-        `this endpoint (full-archive search needs a paid tier; bookmarks need the ` +
-        `bookmark.read scope)` +
+        `${base} — authenticated, but the request was refused. Most often this means the app is ` +
+        `not enrolled: at console.x.com open the app, and make sure it is in the Pay-per-use ` +
+        `package and the Production environment (a "client-not-enrolled" or "client-forbidden" ` +
+        `detail below confirms this). Otherwise, your access tier or this token's scopes do not ` +
+        `cover the endpoint — full-archive search needs a paid tier, bookmarks need bookmark.read` +
         (detail ? ` (${detail})` : "")
       );
     }

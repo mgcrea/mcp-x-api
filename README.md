@@ -49,22 +49,41 @@ Run `x_count_recent` before a broad search — it returns totals without reading
 
 ## Configure
 
-Only one variable is required:
+**The server starts with no configuration at all.** In that state it registers only the tools that need no credentials — `x_compose_post`, `x_validate_post`, `x_build_search_query` and `x_auth_status` — and `x_auth_status` tells you exactly what to set for the rest. It never refuses to start over missing credentials, because an MCP server that exits shows up in the client as a bare `Connection closed` with the explanation swallowed.
+
+To read anything, one variable is required:
 
 ```bash
-export X_API_BEARER_TOKEN="..."   # X developer portal → your app → Keys and tokens
+export X_API_BEARER_TOKEN="..."   # console.x.com → your app → Keys and Tokens
 ```
 
-That covers every public read: lookup, search, profiles, timelines. See [.env.example](./.env.example) for the rest.
+That covers every public read: lookup, search, profiles, timelines — no OAuth needed. See [Getting credentials](#getting-credentials) below, and [.env.example](./.env.example) for the rest.
+
+### Getting credentials
+
+Create an app at **[console.x.com](https://console.x.com)** — this replaced the old `developer.x.com` portal, and the legacy URL is a common dead end. Sign in, accept the Developer Agreement, then **New App**.
+
+Settings that matter:
+
+| Setting                   | Value                            | Why                                                                                                                                                                    |
+| ------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Type of App**           | **Native App**                   | Native App and Single Page App are _public_ clients — PKCE, no client secret. Web App and Automated App are confidential and issue a secret this server does not want. |
+| **App permissions**       | Read _(or Read and write)_       | Read covers search and bookmarks. Changing this later forces every user to re-authorize.                                                                               |
+| **Callback URI**          | `http://127.0.0.1:8723/callback` | Must match byte for byte. X's docs say to use `127.0.0.1`, not `localhost`, for local development.                                                                     |
+| **Package / Environment** | **Pay-per-use / Production**     | See the warning below.                                                                                                                                                 |
+
+Both credentials appear on the app's **Keys and Tokens** screen: the **Bearer Token** and the **Client ID**.
+
+> **The enrollment trap.** An app left in the legacy Free package or the Development environment logs in successfully and then fails _every_ user-context call with `403 client-not-enrolled`. If that happens, open the app at console.x.com and move it to Pay-per-use / Production. X's own `xurl` CLI documents this as the fix.
+
+Creating an app and getting credentials appears to be free; **making calls is not** — there has been no free tier since 2026-02-06, so you need prepurchased credits before any read succeeds.
 
 **OAuth 2.0** is needed only for bookmarks, your home timeline, and API writes:
 
 ```bash
-export X_API_CLIENT_ID="..."      # an OAuth 2.0 app with PKCE enabled
+export X_API_CLIENT_ID="..."      # the Client ID of a Native App (public PKCE client)
 npx @mgcrea/mcp-x-api login       # opens a browser, stores a refresh token (mode 600)
 ```
-
-> The callback URL must match the X portal **byte for byte**. The default is `http://127.0.0.1:8723/callback` — register exactly that. The port is fixed rather than ephemeral for this reason.
 
 ### Config file
 
@@ -185,6 +204,22 @@ The cheapest workflow is free until the last step:
 The URL comes back whether or not a browser could be opened, so Docker and SSH behave identically.
 
 **Web intents cannot** attach media, create polls, make native quote posts, or build threads — those need the paid API. Replying to a post _does_ work (`inReplyTo`).
+
+## Troubleshooting
+
+**`MCP error -32000: Connection closed`** — the server process died on startup. It does _not_ do this for missing credentials (see [Configure](#configure)), so check, in order:
+
+1. The command actually resolves. `@mgcrea/mcp-x-api` must be published for the `npx` form to work; while developing, point at a built file: `"command": "node", "args": ["/absolute/path/to/dist/cli.js"]`. A relative `./dist/cli.js` depends on the client's working directory.
+2. You ran `pnpm build` — `dist/cli.js` has to exist.
+3. Run it by hand to see stderr, which MCP clients swallow: `X_API_BEARER_TOKEN=... node dist/cli.js`. A config error prints one readable line; add `X_API_DEBUG=1` for the stack.
+
+**Only four tools show up** — no credentials are configured. Call `x_auth_status`; it returns the setup steps.
+
+**I want OAuth but see no way in** — OAuth needs an app you register. See [Getting credentials](#getting-credentials): create a **Native App** at console.x.com, set `X_API_CLIENT_ID` to its Client ID, register the callback, then run `npx @mgcrea/mcp-x-api login` (or call `x_auth_login`). There is no way to log in without a client id — X has nothing to authorize against.
+
+**`403 client-not-enrolled` right after a successful login** — the app is in the legacy Free package or the Development environment. Move it to **Pay-per-use / Production** at console.x.com. Nothing about your token or scopes is wrong.
+
+**Bookmarks or the home timeline say they cannot identify your account** — X's `/2/users/me` is unreliable, and login tolerates it failing. The server retries it lazily on first use and caches the result, so this usually resolves itself; if it persists, it is normally the enrollment trap above rather than a login problem.
 
 ## Notes
 

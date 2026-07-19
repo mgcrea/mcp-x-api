@@ -15,7 +15,7 @@ export const registerUsageTools = (
       description:
         "What this session has spent against X's pay-per-use rates, how much the dedup cache " +
         "saved, and the pricing table used to compute it. Estimates only, counted since this " +
-        "process started — the X developer portal is the authoritative record.",
+        "process started — the X developer console (console.x.com) is the authoritative record.",
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },

@@ -236,7 +236,7 @@ export const awaitCallback = (opts: {
         ? new Error(
             `Port ${port} is already in use, so the OAuth callback cannot be received. Free it, ` +
               `or set X_API_REDIRECT_URI to another loopback URL — and register that exact URL ` +
-              `in the X developer portal, which must match byte for byte.`,
+              `in the X developer console at console.x.com, which must match byte for byte.`,
           )
         : err,
     );

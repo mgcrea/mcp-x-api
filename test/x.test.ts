@@ -141,11 +141,20 @@ describe("error messages", () => {
     );
   });
 
-  it("explains a 403 as a tier or scope problem, not a bad token", async () => {
+  it("names the enrollment trap first on a 403 — the usual cause, and not a scope problem", async () => {
     const f = vi.fn(async () => json({ title: "Forbidden" }, { status: 403 }));
-    await expect(
-      clientWith(f as unknown as typeof fetch).get("/2/tweets/search/all"),
-    ).rejects.toThrow(/access tier or this token's scopes/);
+    let message = "";
+    try {
+      await clientWith(f as unknown as typeof fetch).get("/2/users/1/bookmarks", {}, "user");
+    } catch (err) {
+      message = (err as Error).message;
+    }
+
+    expect(message).toMatch(/console\.x\.com/);
+    expect(message).toMatch(/Pay-per-use/);
+    expect(message).toMatch(/Production/);
+    // Tier and scopes are still mentioned, but after the more likely cause.
+    expect(message.indexOf("Pay-per-use")).toBeLessThan(message.indexOf("access tier"));
   });
 
   it("quotes the rate-limit window on a 429", async () => {
