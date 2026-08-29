@@ -12,6 +12,10 @@ import {
   loadConfig,
   resolveConfigPath,
   setupInstructions,
+  adsSetupInstructions,
+  hasAdsAccess,
+  DEFAULT_ADS_BASE_URL,
+  SANDBOX_ADS_BASE_URL,
 } from "../src/config.js";
 
 let dir: string;
@@ -220,5 +224,64 @@ describe("effectiveScopes", () => {
   it("does not add tweet.write when writes are allowed but the backend is intent", () => {
     const config = loadConfig({ X_API_CLIENT_ID: "c", X_API_ALLOW_WRITES: "1" }, absent);
     expect(effectiveScopes(config)).not.toContain("tweet.write");
+  });
+});
+
+describe("ads configuration", () => {
+  it("is off by default, so nothing ads-related is registered unasked", () => {
+    const config = loadConfig({ X_API_CLIENT_ID: "c" }, absent);
+    expect(config.adsEnabled).toBe(false);
+    expect(config.adsAllowWrites).toBe(false);
+    expect(hasAdsAccess(config)).toBe(false);
+  });
+
+  it("needs a user context, because a Bearer token cannot reach the Ads API", () => {
+    expect(() => loadConfig({ X_API_BEARER_TOKEN: "t", X_ADS_ENABLED: "1" }, absent)).toThrow(
+      /X_API_CLIENT_ID/,
+    );
+    expect(hasAdsAccess(loadConfig({ X_API_CLIENT_ID: "c", X_ADS_ENABLED: "1" }, absent))).toBe(
+      true,
+    );
+  });
+
+  it("refuses ads writes switched on without ads itself, rather than ignoring them", () => {
+    expect(() => loadConfig({ X_API_CLIENT_ID: "c", X_ADS_ALLOW_WRITES: "1" }, absent)).toThrow(
+      /X_ADS_ENABLED/,
+    );
+  });
+
+  it("defaults to production, and detects the sandbox by host", () => {
+    expect(loadConfig({}, absent).adsBaseUrl).toBe(DEFAULT_ADS_BASE_URL);
+    // X's docs name a sandbox host with no DNS record at all; this is the one
+    // that resolves, so the constant is not a typo waiting to be corrected.
+    expect(SANDBOX_ADS_BASE_URL).toBe("https://ads-api-sandbox.twitter.com");
+  });
+
+  it("reads ads settings from the config file, and rejects a misspelled key", () => {
+    const path = write("ads.json", {
+      clientId: "c",
+      adsEnabled: true,
+      adsAccountId: "18ce54d4x5t",
+    });
+    const config = loadConfig({}, path);
+    expect(config.adsEnabled).toBe(true);
+    expect(config.adsAccountId).toBe("18ce54d4x5t");
+
+    const typo = write("typo.json", { clientId: "c", adsEnable: true });
+    expect(() => loadConfig({}, typo)).toThrow(/not valid/);
+  });
+
+  it("lets the environment override the file per field, as everywhere else", () => {
+    const path = write("both.json", { clientId: "c", adsEnabled: true, adsAllowWrites: true });
+    expect(loadConfig({ X_ADS_ALLOW_WRITES: "0" }, path).adsAllowWrites).toBe(false);
+  });
+
+  it("names the two steps people miss in the ads setup guidance", () => {
+    const guidance = adsSetupInstructions(loadConfig({ X_API_CLIENT_ID: "c" }, absent)).join(" ");
+    expect(guidance).toContain("Ads Project");
+    // A token minted before approval authenticates fine and then fails every
+    // call, which reads as a scope problem and is not one.
+    expect(guidance).toMatch(/before approval/);
+    expect(guidance).toContain(SANDBOX_ADS_BASE_URL);
   });
 });

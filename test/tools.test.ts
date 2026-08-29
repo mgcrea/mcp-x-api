@@ -7,7 +7,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it, vi } from "vitest";
 
 import { staticTokenProvider } from "../src/client/auth.js";
-import { loadConfig, type Config } from "../src/config.js";
+import { effectiveScopes, loadConfig, type Config } from "../src/config.js";
 import { createServer } from "../src/server.js";
 
 const jsonResponse = (body: unknown, init: { status?: number } = {}) =>
@@ -671,5 +671,303 @@ describe("x_get_user", () => {
   it("refuses when neither is given", async () => {
     const res = await (await connect()).call("x_get_user", {});
     expect(res.isToolError).toBe(true);
+  });
+});
+
+/**
+ * Ads rides the OAuth 2.0 session, so it needs a client id — but it is off
+ * unless asked for. The two exact-array assertions above are deliberately left
+ * untouched: neither of their environments enables ads, so a correct
+ * implementation cannot change them.
+ */
+const ADS_READ = { X_API_CLIENT_ID: "cid", X_ADS_ENABLED: "1" };
+const ADS_WRITE = { ...ADS_READ, X_ADS_ALLOW_WRITES: "1" };
+const ADS_SANDBOX = { ...ADS_WRITE, X_ADS_BASE_URL: "https://ads-api-sandbox.twitter.com" };
+
+const adsNames = async (env: Record<string, string>): Promise<string[]> =>
+  (await (await connect(env)).toolNames()).filter((n) => n.startsWith("x_ads_"));
+
+describe("ads tool registration", () => {
+  // Cheap, and it keeps holding as ads tools are added later.
+  it("registers no ads tools at all unless X_ADS_ENABLED is set", async () => {
+    expect(await adsNames({ X_API_BEARER_TOKEN: "t" })).toEqual([]);
+    expect(await adsNames({ X_API_BEARER_TOKEN: "t", X_API_CLIENT_ID: "cid" })).toEqual([]);
+  });
+
+  it("registers the ads reads, and none of the writes, when only enabled", async () => {
+    expect(await adsNames(ADS_READ)).toEqual([
+      "x_ads_create_stats_job",
+      "x_ads_download_stats_job",
+      "x_ads_get_accounts",
+      "x_ads_get_audiences",
+      "x_ads_get_campaigns",
+      "x_ads_get_funding_instruments",
+      "x_ads_get_line_items",
+      "x_ads_get_promoted_tweets",
+      "x_ads_get_stats",
+      "x_ads_get_stats_jobs",
+      "x_ads_get_targeting_criteria",
+      "x_ads_search_targeting_options",
+    ]);
+  });
+
+  it("registers the campaign-mutating tools only when X_ADS_ALLOW_WRITES is on", async () => {
+    const names = await adsNames(ADS_WRITE);
+    for (const tool of [
+      "x_ads_create_campaign",
+      "x_ads_update_campaign",
+      "x_ads_delete_campaign",
+      "x_ads_create_line_item",
+      "x_ads_delete_line_item",
+      "x_ads_create_targeting_criterion",
+      "x_ads_create_promoted_tweet",
+      "x_ads_set_entity_status",
+    ]) {
+      expect(names).toContain(tool);
+    }
+  });
+
+  // Queuing an analytics job spends nothing, so gating it behind the money
+  // switch would make long-range analytics unreachable in the safe config.
+  it("keeps the analytics job tools available without enabling writes", async () => {
+    const names = await adsNames(ADS_READ);
+    expect(names).toContain("x_ads_create_stats_job");
+    expect(names).toContain("x_ads_download_stats_job");
+  });
+
+  it("registers the sandbox account tool only against the sandbox", async () => {
+    expect(await adsNames(ADS_WRITE)).not.toContain("x_ads_create_sandbox_account");
+    expect(await adsNames(ADS_SANDBOX)).toContain("x_ads_create_sandbox_account");
+  });
+
+  it("refuses to start when ads is enabled without a user context", () => {
+    // A Bearer token cannot reach /12/accounts at all, so this is a
+    // configuration error rather than something to discover per call.
+    expect(() => loadConfig({ X_API_BEARER_TOKEN: "t", X_ADS_ENABLED: "1" }, ABSENT)).toThrow(
+      /X_API_CLIENT_ID/,
+    );
+  });
+
+  it("refuses ads writes that are switched on without ads itself", () => {
+    expect(() => loadConfig({ X_API_CLIENT_ID: "c", X_ADS_ALLOW_WRITES: "1" }, ABSENT)).toThrow(
+      /X_ADS_ENABLED/,
+    );
+  });
+
+  it("asks for the ads scopes only when the matching tools exist", () => {
+    expect(effectiveScopes(loadConfig({ X_API_CLIENT_ID: "c" }, ABSENT))).not.toContain("ads.read");
+    const read = effectiveScopes(loadConfig(ADS_READ, ABSENT));
+    expect(read).toContain("ads.read");
+    expect(read).not.toContain("ads.write");
+    expect(effectiveScopes(loadConfig(ADS_WRITE, ABSENT))).toContain("ads.write");
+  });
+
+  it("marks ads deletes destructive and ads reads read-only", async () => {
+    const h = await connect(ADS_WRITE);
+    const tools = (await h.client.listTools()).tools;
+    const byName = new Map(tools.map((t) => [t.name, t.annotations]));
+    expect(byName.get("x_ads_get_campaigns")?.readOnlyHint).toBe(true);
+    expect(byName.get("x_ads_delete_campaign")?.destructiveHint).toBe(true);
+    expect(byName.get("x_ads_create_campaign")?.destructiveHint).toBe(false);
+    expect(byName.get("x_ads_set_entity_status")?.idempotentHint).toBe(true);
+  });
+});
+
+describe("ads money handling", () => {
+  const adsResponse = (data: unknown) => jsonResponse({ data, request: { params: {} } });
+
+  it("multiplies a major-unit budget into X's micros, and creates PAUSED", async () => {
+    const fetchMock = vi.fn(async () => adsResponse({ id: "8v7jo", name: "Q3" }));
+    const h = await connect(ADS_WRITE, fetchMock);
+    const res = await h.call("x_ads_create_campaign", {
+      accountId: "18ce54d4x5t",
+      fundingInstrumentId: "lygyi",
+      name: "Q3 launch",
+      dailyBudget: 50,
+      confirm: true,
+    });
+
+    const created = h.urls().find((u) => u.includes("/campaigns")) ?? "";
+    expect(created).toContain("daily_budget_amount_local_micro=50000000");
+    // The whole point of the default: a campaign that exists but spends nothing.
+    expect(created).toContain("entity_status=PAUSED");
+    expect(res.entity_status).toBe("PAUSED");
+    expect(res.budget_sent).toMatchObject({
+      daily_budget: 50,
+      daily_budget_amount_local_micro: 50_000_000,
+    });
+    expect(res.cost.estimated_usd).toBe(0);
+  });
+
+  it("creates ACTIVE only when explicitly asked to", async () => {
+    const fetchMock = vi.fn(async () => adsResponse({ id: "8v7jo" }));
+    const h = await connect(ADS_WRITE, fetchMock);
+    const res = await h.call("x_ads_create_campaign", {
+      accountId: "18ce54d4x5t",
+      fundingInstrumentId: "lygyi",
+      name: "Q3 launch",
+      dailyBudget: 50,
+      activateImmediately: true,
+      confirm: true,
+    });
+    expect(h.urls().find((u) => u.includes("/campaigns"))).toContain("entity_status=ACTIVE");
+    expect(res.entity_status).toBe("ACTIVE");
+  });
+
+  it("cannot be called without confirm, so a stray call cannot spend", async () => {
+    const h = await connect(ADS_WRITE);
+    const res = await h.call("x_ads_create_campaign", {
+      fundingInstrumentId: "lygyi",
+      name: "Q3",
+      dailyBudget: 50,
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/confirm/);
+  });
+
+  // A model reading a bare 50000000 concludes the budget is fifty million.
+  it("pairs every micro field it reads back with a human-readable value", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        data: [{ id: "8v7jo", daily_budget_amount_local_micro: 50_000_000 }],
+        next_cursor: null,
+      }),
+    );
+    const h = await connect(ADS_READ, fetchMock);
+    const res = await h.call("x_ads_get_campaigns", { accountId: "18ce54d4x5t" });
+    expect(res.campaigns[0]).toMatchObject({
+      daily_budget: 50,
+      daily_budget_amount_local_micro: 50_000_000,
+    });
+  });
+
+  it("rejects a budget that was pre-multiplied into micros", async () => {
+    const h = await connect(ADS_WRITE);
+    const res = await h.call("x_ads_create_campaign", {
+      accountId: "18ce54d4x5t",
+      fundingInstrumentId: "lygyi",
+      name: "Q3",
+      dailyBudget: 50_000_000,
+      confirm: true,
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/dailyBudget/);
+  });
+});
+
+describe("ads account resolution", () => {
+  it("resolves the only reachable account and asks X just once", async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      String(url).includes("/campaigns")
+        ? jsonResponse({ data: [], next_cursor: null })
+        : jsonResponse({ data: [{ id: "18ce54d4x5t", name: "Acme" }], next_cursor: null }),
+    );
+    const h = await connect(ADS_READ, fetchMock);
+    await h.call("x_ads_get_campaigns", {});
+    await h.call("x_ads_get_campaigns", {});
+    const lookups = h.urls().filter((u) => u.endsWith("count=50"));
+    expect(lookups).toHaveLength(1);
+    expect(h.urls().some((u) => u.includes("/12/accounts/18ce54d4x5t/campaigns"))).toBe(true);
+  });
+
+  // Silently picking the first would create campaigns in the wrong client's
+  // account, which spends real money and is invisible in the response.
+  it("refuses to guess between several accounts, and lists them", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        data: [
+          { id: "aaa", name: "Acme" },
+          { id: "bbb", name: "Globex" },
+        ],
+        next_cursor: null,
+      }),
+    );
+    const res = await (await connect(ADS_READ, fetchMock)).call("x_ads_get_campaigns", {});
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/2 ads accounts/);
+    expect(res.details.accounts).toHaveLength(2);
+  });
+
+  it("explains an empty account list as an access problem, not an empty result", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ data: [], next_cursor: null }));
+    const res = await (await connect(ADS_READ, fetchMock)).call("x_ads_get_campaigns", {});
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/no ads accounts/);
+  });
+});
+
+describe("ads analytics guards", () => {
+  it("refuses a synchronous window wider than X's 7 days, naming the async tool", async () => {
+    const h = await connect(ADS_READ);
+    const res = await h.call("x_ads_get_stats", {
+      accountId: "18ce54d4x5t",
+      entity: "CAMPAIGN",
+      entityIds: ["8v7jo"],
+      startTime: "2026-08-01T00:00:00Z",
+      endTime: "2026-08-20T00:00:00Z",
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/x_ads_create_stats_job/);
+    expect(h.fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects times that are not on a whole hour", async () => {
+    const res = await (
+      await connect(ADS_READ)
+    ).call("x_ads_get_stats", {
+      accountId: "18ce54d4x5t",
+      entity: "CAMPAIGN",
+      entityIds: ["8v7jo"],
+      startTime: "2026-08-01T00:30:00Z",
+      endTime: "2026-08-02T00:00:00Z",
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/startTime/);
+  });
+
+  it("rejects more than the 20 entities X allows per synchronous call", async () => {
+    const res = await (
+      await connect(ADS_READ)
+    ).call("x_ads_get_stats", {
+      accountId: "18ce54d4x5t",
+      entity: "CAMPAIGN",
+      entityIds: Array.from({ length: 21 }, (_, i) => `id${i}`),
+      startTime: "2026-08-01T00:00:00Z",
+      endTime: "2026-08-02T00:00:00Z",
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/entityIds/);
+  });
+
+  it("requires a country when segmenting an async job by metro", async () => {
+    const h = await connect(ADS_READ);
+    const res = await h.call("x_ads_create_stats_job", {
+      accountId: "18ce54d4x5t",
+      entity: "CAMPAIGN",
+      entityIds: ["8v7jo"],
+      startTime: "2026-08-01T00:00:00Z",
+      endTime: "2026-08-02T00:00:00Z",
+      segmentation: "METROS",
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/country/);
+    expect(h.fetchMock).not.toHaveBeenCalled();
+  });
+
+  // PUBLISHER_NETWORK is a valid line-item placement but not a valid analytics
+  // one, which is the kind of thing worth catching in the schema.
+  it("rejects a placement the analytics endpoint does not accept", async () => {
+    const res = await (
+      await connect(ADS_READ)
+    ).call("x_ads_get_stats", {
+      accountId: "18ce54d4x5t",
+      entity: "CAMPAIGN",
+      entityIds: ["8v7jo"],
+      startTime: "2026-08-01T00:00:00Z",
+      endTime: "2026-08-02T00:00:00Z",
+      placement: "PUBLISHER_NETWORK",
+    });
+    expect(res.isToolError).toBe(true);
+    expect(res.error).toMatch(/placement/);
   });
 });

@@ -1,4 +1,6 @@
 export { BUILD_INFO, type BuildInfo } from "./build-info.js";
+export { AdsApiClient, type AdsApiClientOptions, type CursorPage } from "./client/ads.js";
+export { fromMicro, MICRO, shapeMoney, toMicro } from "./client/ads-shape.js";
 export {
   bearerTokenProvider,
   compositeTokenProvider,
@@ -11,6 +13,7 @@ export {
 export { createDayCache, utcDay, type DayCache, type ResourceKind } from "./client/cache.js";
 export { createLedger, type CostNote, type Ledger, type UsageReport } from "./client/cost.js";
 export {
+  AdsAccessError,
   BudgetExceededError,
   PreconditionError,
   UserContextRequiredError,
@@ -27,12 +30,17 @@ export {
   type ShapedPost,
   type ShapedUser,
 } from "./client/shape.js";
+export type { Query, RateLimitSnapshot } from "./client/http.js";
 export { XApiClient, type XApiClientOptions } from "./client/x.js";
 export {
+  adsSetupInstructions,
+  DEFAULT_ADS_BASE_URL,
   DEFAULT_PRICING,
   effectiveScopes,
+  hasAdsAccess,
   loadConfig,
   resolveConfigPath,
+  SANDBOX_ADS_BASE_URL,
   type Config,
   type Pricing,
 } from "./config.js";
@@ -51,4 +59,4 @@ export {
   type CreatedServer,
   type CreateServerOptions,
 } from "./server.js";
-export { registerTools, type ToolContext } from "./tools/index.js";
+export { registerTools, type AdsContext, type ToolContext } from "./tools/index.js";

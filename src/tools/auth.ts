@@ -12,8 +12,9 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
       description:
         "Which credentials this server is holding: an app-only Bearer token (enough for public " +
         "reads and search), an OAuth2 user session (needed for bookmarks and the home timeline), " +
-        "or neither. Shows the logged-in handle, granted scopes and token expiry. Call this " +
-        "first if the X API tools seem to be missing — it explains exactly what to configure.",
+        "or neither. Shows the logged-in handle, granted scopes and token expiry, and whether " +
+        "the Ads API tools are registered and against which environment. Call this first if the " +
+        "X API tools seem to be missing — it explains exactly what to configure.",
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },
@@ -68,6 +69,24 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
             : {}),
           can_read_public: status.app || status.user.authenticated,
           can_read_bookmarks: status.user.authenticated,
+          ads: ctx.ads
+            ? {
+                enabled: true,
+                environment: ctx.ads.sandbox ? "sandbox" : "production",
+                base_url: ctx.ads.baseUrl,
+                writes_enabled: ctx.ads.allowWrites,
+                default_account_id: ctx.ads.accountId ?? null,
+                note: ctx.ads.sandbox
+                  ? "Sandbox — campaigns here spend nothing."
+                  : "PRODUCTION — these tools read and can change campaigns that spend real money.",
+              }
+            : {
+                enabled: false,
+                reason: ctx.adsSetup
+                  ? "X_ADS_ENABLED is not set."
+                  : "no OAuth2 client id configured",
+                ...(ctx.adsSetup ? { setup: ctx.adsSetup } : {}),
+              },
         };
       }),
   );

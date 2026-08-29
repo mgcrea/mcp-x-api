@@ -10,7 +10,9 @@ export type XApiError = {
   type?: string;
   status?: number;
   message?: string;
-  code?: number;
+  code?: number | string;
+  /** Ads application errors carry the offending field here. */
+  details?: unknown;
   /** Present on partial responses, e.g. one deleted post in a batch lookup. */
   resource_type?: string;
   parameter?: string;
@@ -57,6 +59,22 @@ export class WritesDisabledError extends Error {
         `mutating tools. Note that x_compose_post posts for free via a web intent and needs no ` +
         `flag at all.`,
     );
+  }
+}
+
+/**
+ * Thrown when the Ads API is reachable but this account cannot use it — no Ads
+ * entitlement on the app, or no ads account behind the logged-in user. Separate
+ * from `UserContextRequiredError` because logging in again does not fix it: the
+ * missing piece is an approval, not a token.
+ */
+export class AdsAccessError extends Error {
+  override readonly name = "AdsAccessError";
+  readonly details: Record<string, unknown>;
+
+  constructor(message: string, details: Record<string, unknown> = {}) {
+    super(message);
+    this.details = details;
   }
 }
 

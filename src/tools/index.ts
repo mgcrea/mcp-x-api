@@ -1,11 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+import type { AdsApiClient } from "../client/ads.js";
 import type { TokenProvider } from "../client/auth.js";
 import type { DayCache } from "../client/cache.js";
 import type { Ledger } from "../client/cost.js";
 import type { TokenStore } from "../client/tokens.js";
 import type { XApiClient } from "../client/x.js";
 import type { Pricing } from "../config.js";
+import { registerAdsTools } from "./ads/index.js";
 import { registerAuthTools } from "./auth.js";
 import { registerComposeTools } from "./compose.js";
 import { registerPostTools } from "./posts.js";
@@ -13,6 +15,22 @@ import { registerQueryBuilderTool, registerSearchTools } from "./search.js";
 import { registerTimelineTools } from "./timelines.js";
 import { registerUsageTools } from "./usage.js";
 import { registerUserTools } from "./users.js";
+
+/**
+ * Everything the ads tools need, as one object rather than four independently
+ * optional fields: "the client exists exactly when ads is configured" is then
+ * an invariant the type enforces rather than one that can drift.
+ */
+export type AdsContext = {
+  client: AdsApiClient;
+  /** Register the campaign-mutating tools. Off by default — see X_ADS_ALLOW_WRITES. */
+  allowWrites: boolean;
+  /** Default ads account. Absent means "resolve it lazily from GET /12/accounts". */
+  accountId?: string | undefined;
+  /** True when pointed at the Ads sandbox, where nothing spends real money. */
+  sandbox: boolean;
+  baseUrl: string;
+};
 
 /**
  * Threaded through every tool rather than a bare `allowWrites` boolean: the
@@ -51,6 +69,10 @@ export type ToolContext = {
   /** Present only when a client id is configured; its presence registers the login tools. */
   login?: ((open: boolean) => Promise<LoginSummary>) | undefined;
   logout?: (() => void) | undefined;
+  /** Present only when X_ADS_ENABLED is on and an OAuth client id is configured. */
+  ads?: AdsContext | undefined;
+  /** Ads setup guidance surfaced by x_auth_status when ads is not configured. */
+  adsSetup?: string[] | undefined;
 };
 
 export type LoginSummary = {
@@ -87,5 +109,10 @@ export const registerTools = (server: McpServer, client: XApiClient, ctx: ToolCo
   // Bookmarks and the home timeline are unreachable without a user session, so
   // registering them Bearer-only would just hand the model two tools that
   // always fail with the same message.
-  if (ctx.login) registerTimelineTools(server, client, ctx);
+  if (ctx.login) {
+    registerTimelineTools(server, client, ctx);
+    // Same reasoning for ads, which is user-context only: an app-only Bearer
+    // token cannot reach /12/accounts at all.
+    if (ctx.ads) registerAdsTools(server, ctx.ads.client, ctx);
+  }
 };

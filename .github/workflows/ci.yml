@@ -52,7 +52,11 @@ jobs:
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
           | X_API_CONFIG=/nonexistent.json X_API_BEARER_TOKEN=ci-fake node dist/cli.js 2>/dev/null \
-          | grep -q 'x_compose_post' || { echo "MCP smoke test failed"; exit 1; }
+          > /tmp/tools.json
+          grep -q 'x_compose_post' /tmp/tools.json || { echo "MCP smoke test failed"; exit 1; }
+          # The negative half of the same promise: a capability that was not
+          # configured must not merely refuse, it must not be registered.
+          ! grep -q 'x_ads_' /tmp/tools.json || { echo "ads tools leaked without X_ADS_ENABLED"; exit 1; }
 
   publish-npm:
     name: Publish to npm

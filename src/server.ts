@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { BUILD_INFO } from "./build-info.js";
+import { AdsApiClient } from "./client/ads.js";
 import {
   bearerTokenProvider,
   compositeTokenProvider,
@@ -14,7 +15,14 @@ import { createOAuthClient, startLoginFlow } from "./client/oauth.js";
 import { createTokenStore, type TokenStore } from "./client/tokens.js";
 import { XApiClient } from "./client/x.js";
 import { openInBrowser } from "./compose/open.js";
-import { effectiveScopes, hasApiCredentials, setupInstructions, type Config } from "./config.js";
+import {
+  adsSetupInstructions,
+  effectiveScopes,
+  hasAdsAccess,
+  hasApiCredentials,
+  setupInstructions,
+  type Config,
+} from "./config.js";
 import { registerTools } from "./tools/index.js";
 
 export const SERVER_NAME = BUILD_INFO.name;
@@ -33,6 +41,8 @@ export type CreateServerOptions = {
 export type CreatedServer = {
   server: McpServer;
   client: XApiClient;
+  /** Present only when ads is configured. Exposed for tests and diagnostics. */
+  ads?: AdsApiClient | undefined;
   tokenProvider: TokenProvider;
   cache: DayCache;
   ledger: Ledger;
@@ -73,6 +83,20 @@ export const createServer = (opts: CreateServerOptions): CreatedServer => {
     ...(opts.logger ? { logger: opts.logger } : {}),
   });
 
+  // Shares the token provider with the v2 client: ads rides the same OAuth 2.0
+  // session, distinguished only by the ads.read / ads.write scopes.
+  const ads = hasAdsAccess(config)
+    ? new AdsApiClient({
+        baseUrl: config.adsBaseUrl,
+        tokenProvider,
+        maxRetries: config.maxRetries,
+        maxDownloadBytes: config.adsMaxDownloadBytes,
+        userAgent: USER_AGENT,
+        ...(opts.fetch ? { fetch: opts.fetch } : {}),
+        ...(opts.logger ? { logger: opts.logger } : {}),
+      })
+    : undefined;
+
   const cache = createDayCache({
     maxEntries: config.cacheMaxEntries,
     enabled: config.cacheEnabled,
@@ -97,6 +121,17 @@ export const createServer = (opts: CreateServerOptions): CreatedServer => {
     tokenProvider,
     hasCredentials: hasApiCredentials(config),
     ...(hasApiCredentials(config) ? {} : { setup: setupInstructions(config) }),
+    ...(ads
+      ? {
+          ads: {
+            client: ads,
+            allowWrites: config.adsAllowWrites,
+            sandbox: ads.sandbox,
+            baseUrl: config.adsBaseUrl,
+            ...(config.adsAccountId ? { accountId: config.adsAccountId } : {}),
+          },
+        }
+      : { adsSetup: adsSetupInstructions(config) }),
     ...(config.clientId
       ? {
           tokenFile: config.tokenFile,
@@ -122,5 +157,5 @@ export const createServer = (opts: CreateServerOptions): CreatedServer => {
       : {}),
   });
 
-  return { server, client, tokenProvider, cache, ledger, store };
+  return { server, client, tokenProvider, cache, ledger, store, ...(ads ? { ads } : {}) };
 };

@@ -1,0 +1,111 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
+import { isRecord } from "../../client/ads-shape.js";
+import type { AdsApiClient } from "../../client/ads.js";
+import type { AdsContext } from "../index.js";
+import { wrap } from "../util.js";
+import { accountIdArg, adsCostNote, adsCountArg, shapeAds } from "./util.js";
+
+export const registerAdsAccountTools = (
+  server: McpServer,
+  client: AdsApiClient,
+  ads: AdsContext,
+  resolveAccount: (explicit?: string) => Promise<string>,
+): void => {
+  server.registerTool(
+    "x_ads_get_accounts",
+    {
+      description:
+        "List the advertising accounts this login can reach, with their name, currency, timezone " +
+        "and approval status. Start here: every other ads tool needs an account id, and the " +
+        "currency and timezone returned here decide how budgets and analytics dates are read.",
+      inputSchema: {
+        count: adsCountArg,
+        withDeleted: z
+          .boolean()
+          .default(false)
+          .describe("Include deleted accounts. Off by default."),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ count, withDeleted }) =>
+      wrap(async () => {
+        const page = await client.paginateCursor(
+          "/12/accounts",
+          {
+            count,
+            ...(withDeleted ? { with_deleted: true } : {}),
+          },
+          { maxItems: count },
+        );
+        return {
+          accounts: page.data,
+          environment: ads.sandbox ? "sandbox" : "production",
+          ...(page.nextCursor ? { next_cursor: page.nextCursor } : {}),
+          cost: adsCostNote(),
+        };
+      }),
+  );
+
+  server.registerTool(
+    "x_ads_get_funding_instruments",
+    {
+      description:
+        "List an account's funding instruments — the payment sources campaigns draw from. A " +
+        "campaign cannot be created without one, and the instrument's `currency` is the currency " +
+        "every budget on that campaign is stated in. Check `able_to_fund` before using one.",
+      inputSchema: { accountId: accountIdArg, count: adsCountArg },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ accountId, count }) =>
+      wrap(async () => {
+        const id = await resolveAccount(accountId);
+        const page = await client.paginateCursor(
+          `/12/accounts/${id}/funding_instruments`,
+          { count },
+          { maxItems: count },
+        );
+        return {
+          account_id: id,
+          funding_instruments: shapeAds({ data: page.data }),
+          ...(page.nextCursor ? { next_cursor: page.nextCursor } : {}),
+          cost: adsCostNote(),
+        };
+      }),
+  );
+
+  // Sandbox only: on production these entities are created by X, not by callers,
+  // and offering the tool anywhere else would be offering a guaranteed failure.
+  if (!ads.sandbox) return;
+
+  server.registerTool(
+    "x_ads_create_sandbox_account",
+    {
+      description:
+        "Create a throwaway ads account in the sandbox, complete with a funding instrument, so " +
+        "the campaign tools can be exercised without spending anything. Sandbox only — this tool " +
+        "is not registered against production.",
+      inputSchema: {},
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    },
+    async () =>
+      wrap(async () => {
+        const created = await client.post("/12/accounts");
+        const data = isRecord(created) ? created.data : undefined;
+        const id = isRecord(data) && typeof data.id === "string" ? data.id : undefined;
+        return {
+          account: data,
+          ...(id
+            ? {
+                next_step:
+                  `Pass accountId: "${id}" to the other ads tools, or set X_ADS_ACCOUNT_ID to it. ` +
+                  `Call x_ads_get_funding_instruments to find the funding instrument id you will ` +
+                  `need to create a campaign.`,
+              }
+            : {}),
+          cost: adsCostNote(),
+        };
+      }),
+  );
+};

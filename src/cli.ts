@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 import { BUILD_INFO } from "./build-info.js";
 import { startLoginFlow } from "./client/oauth.js";
 import { openInBrowser } from "./compose/open.js";
-import { hasApiCredentials, loadConfig, setupInstructions } from "./config.js";
+import { hasAdsAccess, hasApiCredentials, loadConfig, setupInstructions } from "./config.js";
 import { createServer } from "./server.js";
 
 // Everything goes to stderr: stdout is the MCP protocol channel, and a stray
@@ -16,6 +16,17 @@ const stderrLogger = {
   },
   warn: (...args: unknown[]) => console.error("[x-api-mcp]", ...args),
   error: (...args: unknown[]) => console.error("[x-api-mcp]", ...args),
+};
+
+/**
+ * The ads segment of the startup banner. It spells out the environment because
+ * "LIVE+writes" scrolling past is the last chance anyone has to notice before
+ * an agent changes a campaign that spends real money.
+ */
+const describeAds = (config: ReturnType<typeof loadConfig>): string => {
+  if (!hasAdsAccess(config)) return "off";
+  const env = /ads-api-sandbox\./.test(config.adsBaseUrl) ? "SANDBOX" : "LIVE";
+  return `${env}${config.adsAllowWrites ? "+writes" : " read-only"}`;
 };
 
 const describeAuth = (config: ReturnType<typeof loadConfig>): string => {
@@ -38,6 +49,9 @@ const runSubcommand = async (command: string): Promise<boolean> => {
 
   if (command === "status") {
     const status = tokenProvider.describe();
+    console.error(
+      `ads: ${describeAds(config)}${hasAdsAccess(config) ? ` (${config.adsBaseUrl})` : ""}`,
+    );
     console.error(`app-only bearer: ${status.app ? "configured" : "not configured"}`);
     console.error(
       status.user.authenticated
@@ -94,6 +108,7 @@ const main = async (): Promise<void> => {
       `writes=${config.allowWrites ? `ENABLED via ${config.writeBackend}` : "disabled"}, ` +
       `compose=intent (free), ` +
       `full-archive=${config.enableFullArchive ? "on" : "off"}, ` +
+      `ads=${describeAds(config)}, ` +
       `cache=${config.cacheEnabled ? "on" : "off"})`,
   );
 

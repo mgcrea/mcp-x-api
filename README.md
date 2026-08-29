@@ -14,6 +14,7 @@ Model Context Protocol server for the **X (Twitter) API v2** — built for readi
 - **Readable output.** X returns posts whose author, quoted post and real URLs live in a separate `includes` sidecar. Every tool here resolves that first, so posts arrive with the handle inline, t.co links expanded, and retweets showing the original text.
 - **Free posting.** `x_compose_post` returns an [`x.com/intent/tweet`](https://docs.x.com/x-for-websites/post-button/guides/web-intent) URL you click. No credentials, no API quota, no cost — and nothing publishes without a human click.
 - **Cost-aware by design.** X is pay-per-use. Every read reports what it cost, repeat reads inside a UTC day are free, and a budget ceiling stops a runaway loop before the request goes out.
+- **Ads, when you ask for it.** Campaigns, line items, targeting, audiences and performance analytics through the [X Ads API](https://docs.x.com/x-ads-api/introduction). Needs its own approval from X and is off unless configured; campaign writes are a second switch again, and anything created starts PAUSED.
 - **Official API only.** No cookie scraping, no password automation, nothing that risks your account.
 
 ## Cost — read this first
@@ -39,12 +40,14 @@ Run `x_count_recent` before a broad search — it returns totals without reading
 
 > Prices are X's published list rates, transcribed 2026-07-19. Override them via the config file's `pricing` key if they change. `x_usage_report` estimates locally and is not authoritative — the developer portal is.
 
+**Ads is billed elsewhere.** Ads API calls are not metered by X's pay-per-use read pricing, so they cost nothing and never appear in `x_usage_report`. What they manage does: a campaign spends your advertising budget, on X's invoice rather than the API's, and no tool here can see that number. Treat `x_usage_report` as silent on ads rather than as reporting zero.
+
 ## Security
 
 - **Supply chain.** Two runtime dependencies: the MCP SDK and zod. The HTTP client is ~250 lines of `fetch`.
 - **Verified builds.** npm releases carry [provenance](https://docs.npmjs.com/generating-provenance-statements) via OIDC trusted publishing; container images are multi-arch, ship an SBOM, and are signed with [cosign](https://docs.sigstore.dev/cosign/signing/overview/).
-- **Your credentials.** Read from the environment or a config file you control, sent only to `api.x.com`, never logged. The **one** file this server writes is `tokens.json` (mode 600), and only if you use OAuth — it has to persist a rotating refresh token. Everything else is read-only.
-- **Blast radius.** Paid writes are off by default and _unregistered_ rather than refused, so an agent cannot call what does not exist. The free compose path never publishes without a human clicking Post.
+- **Your credentials.** Read from the environment or a config file you control, sent only to `api.x.com` (and `ads-api.x.com` when ads is enabled), never logged. The **one** file this server writes is `tokens.json` (mode 600), and only if you use OAuth — it has to persist a rotating refresh token. Everything else is read-only.
+- **Blast radius.** Paid writes are off by default and _unregistered_ rather than refused, so an agent cannot call what does not exist. The free compose path never publishes without a human clicking Post. Ads writes are a separate switch on the same principle, campaigns and line items are created `PAUSED` unless a call explicitly asks otherwise, and budgets are taken in major currency units — the ×1,000,000 mistake is not expressible.
 - **No scraping.** This server never touches session cookies or your password. Tools that do are a ban risk regardless of how they are marketed.
 
 ## Configure
@@ -84,6 +87,28 @@ Creating an app and getting credentials appears to be free; **making calls is no
 export X_API_CLIENT_ID="..."      # the Client ID of a Native App (public PKCE client)
 npx @mgcrea/mcp-x-api login       # opens a browser, stores a refresh token (mode 600)
 ```
+
+### Ads API access
+
+The Ads API is a separate product behind a separate approval, even though it uses the same OAuth 2.0 login. Three steps, in order:
+
+1. At [console.x.com](https://console.x.com), open the app → **Project Access** → **MANAGE** → select **Ads Project**. This attaches Ads API access to the app id.
+2. Request Ads API access for that app using X's **Ads API Access Form**. Standard Access covers campaigns, creatives, audiences and analytics.
+3. Once approved, run `x-api-mcp login` **again**, then set `X_ADS_ENABLED=1`.
+
+> **The regenerate trap.** A token minted _before_ your Ads API approval does not carry the entitlement. It logs in fine, reads posts fine, and then fails every ads call — which reads as a scope problem and is not one. If ads calls fail right after approval, log in again before debugging anything else.
+
+Your X user also needs a role on at least one ads account, granted in [ads.x.com](https://ads.x.com) rather than the developer console — the API only ever sees accounts you can already see there.
+
+Exercise the write tools against the free sandbox first:
+
+```bash
+export X_ADS_ENABLED=1
+export X_ADS_ALLOW_WRITES=1
+export X_ADS_BASE_URL=https://ads-api-sandbox.twitter.com   # note: not .x.com, which does not resolve
+```
+
+Campaigns and line items are created `PAUSED` unless a call passes `activateImmediately: true`, and every budget is given in major currency units — `50` means 50.00, never 50000000.
 
 ### Config file
 
@@ -155,6 +180,10 @@ Writes are marked `*`, and `†` means a `confirm: true` argument is required. T
 **Timelines** — `x_get_home_timeline` · `x_get_bookmarks` _(need OAuth login; X serves these for your own account only)_
 
 **Auth** — `x_auth_status` · `x_auth_login` \* · `x_auth_logout` \*† _(the last two need `X_API_CLIENT_ID`)_
+
+**Ads — reads** — `x_ads_get_accounts` · `x_ads_get_funding_instruments` · `x_ads_get_campaigns` · `x_ads_get_line_items` · `x_ads_get_promoted_tweets` · `x_ads_get_targeting_criteria` · `x_ads_search_targeting_options` · `x_ads_get_audiences` · `x_ads_get_stats` · `x_ads_create_stats_job` · `x_ads_get_stats_jobs` · `x_ads_download_stats_job` _(need `X_ADS_ENABLED` and an OAuth login)_
+
+**Ads — writes** \* † — `x_ads_create_campaign` · `x_ads_update_campaign` · `x_ads_delete_campaign` · `x_ads_create_line_item` · `x_ads_update_line_item` · `x_ads_delete_line_item` · `x_ads_create_targeting_criterion` · `x_ads_delete_targeting_criterion` · `x_ads_create_promoted_tweet` · `x_ads_delete_promoted_tweet` · `x_ads_set_entity_status` _(need `X_ADS_ALLOW_WRITES=1`)_
 
 **Usage** — `x_usage_report` · `x_rate_limit_status`
 

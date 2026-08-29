@@ -6,6 +6,16 @@ import { z } from "zod";
 
 export const DEFAULT_BASE_URL = "https://api.x.com";
 
+export const DEFAULT_ADS_BASE_URL = "https://ads-api.x.com";
+
+/**
+ * The Ads API sandbox: free, isolated, and the only sane place to exercise the
+ * write tools. Note the host — X's own docs say `ads-api-sandbox.x.com`, which
+ * has no DNS record at all. `ads-api-sandbox.twitter.com` is the one that
+ * resolves, so this is not a typo waiting to be "fixed".
+ */
+export const SANDBOX_ADS_BASE_URL = "https://ads-api-sandbox.twitter.com";
+
 /**
  * A fixed loopback port, deliberately not an ephemeral one. Unlike most OAuth
  * providers, X matches the callback URL against the value registered in the
@@ -76,6 +86,11 @@ const ConfigSchema = z
     maxRetries: z.number().int().nonnegative().max(10).default(3),
     baseUrl: z.string().min(1).default(DEFAULT_BASE_URL),
     pricing: PricingSchema.default(DEFAULT_PRICING),
+    adsEnabled: z.boolean().default(false),
+    adsAllowWrites: z.boolean().default(false),
+    adsBaseUrl: z.string().min(1).default(DEFAULT_ADS_BASE_URL),
+    adsAccountId: z.string().min(1).optional(),
+    adsMaxDownloadBytes: z.number().int().positive().default(25_000_000),
   })
   .strict()
   .superRefine((cfg, ctx) => {
@@ -94,6 +109,27 @@ const ConfigSchema = z
           "X_API_WRITE_BACKEND=api needs a user context: set X_API_CLIENT_ID and run " +
           "`x-api-mcp login`. The default backend (intent) needs no credentials at all — it " +
           "returns an x.com/intent/tweet URL you click, which costs nothing.",
+      });
+    }
+
+    // The Ads API is user-context only: an app-only Bearer token cannot reach
+    // /12/accounts at all. Saying so here is much cheaper than letting every
+    // ads call fail with an auth error that reads like a bad token.
+    if (cfg.adsEnabled && !cfg.clientId) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "X_ADS_ENABLED=1 needs an OAuth 2.0 user context: set X_API_CLIENT_ID and run " +
+          "`x-api-mcp login`. The Ads API does not accept an app-only Bearer token.",
+      });
+    }
+
+    if (cfg.adsAllowWrites && !cfg.adsEnabled) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "X_ADS_ALLOW_WRITES=1 has no effect without X_ADS_ENABLED=1 — the ads tools are not " +
+          "registered at all. Set both, or neither.",
       });
     }
   });
@@ -127,6 +163,11 @@ const FileConfigSchema = z
     maxRetries: z.number().int().nonnegative().max(10).optional(),
     baseUrl: z.string().min(1).optional(),
     pricing: PricingSchema.optional(),
+    adsEnabled: z.boolean().optional(),
+    adsAllowWrites: z.boolean().optional(),
+    adsBaseUrl: z.string().min(1).optional(),
+    adsAccountId: z.string().min(1).optional(),
+    adsMaxDownloadBytes: z.number().int().positive().optional(),
   })
   .strict();
 
@@ -267,8 +308,22 @@ export const loadConfig = (
     maxRetries: parseIntOpt(env.X_API_MAX_RETRIES) ?? file.maxRetries,
     baseUrl: trimmed(env.X_API_BASE_URL) ?? file.baseUrl,
     pricing: file.pricing,
+    adsEnabled: parseBool(env.X_ADS_ENABLED) ?? file.adsEnabled,
+    adsAllowWrites: parseBool(env.X_ADS_ALLOW_WRITES) ?? file.adsAllowWrites,
+    adsBaseUrl: trimmed(env.X_ADS_BASE_URL) ?? file.adsBaseUrl,
+    adsAccountId: trimmed(env.X_ADS_ACCOUNT_ID) ?? file.adsAccountId,
+    adsMaxDownloadBytes: parseIntOpt(env.X_ADS_MAX_DOWNLOAD_BYTES) ?? file.adsMaxDownloadBytes,
   });
 };
+
+/**
+ * Whether the ads tools should be registered. The Ads API rides the same OAuth
+ * 2.0 user token as bookmarks and the home timeline — the `ads.read` /
+ * `ads.write` scopes are what separate them — so a client id is the hard
+ * requirement, not a second set of credentials.
+ */
+export const hasAdsAccess = (config: Config): boolean =>
+  config.adsEnabled && Boolean(config.clientId);
 
 /** Whether anything at all is configured that can reach the X API. */
 export const hasApiCredentials = (config: Config): boolean =>
@@ -302,6 +357,36 @@ export const setupInstructions = (config: Config): string[] => [
 ];
 
 /**
+ * What to do when ads is enabled but the account cannot reach the Ads API.
+ * Surfaced by `x_auth_status`, because the two steps people miss are invisible
+ * from the error alone: the app needs the Ads Project attached, and any token
+ * minted *before* approval does not carry the entitlement.
+ */
+export const adsSetupInstructions = (config: Config): string[] => [
+  "The Ads API is separate from the X API v2: it needs its own approval, even though it uses " +
+    "the same OAuth 2.0 login.",
+  "At https://console.x.com open your app, then Project Access → MANAGE → Ads Project. That " +
+    "attaches Ads API access to the app id.",
+  "Request Ads API access for the app using X's Ads API Access Form. Standard Access covers " +
+    "campaigns, creatives, audiences and analytics.",
+  // The step everyone misses. An old token authenticates fine and then fails
+  // every ads call, which reads as a scope problem and is not one.
+  "After approval is granted, run `x-api-mcp login` again. A token minted before approval " +
+    "does not carry the entitlement, and re-using it fails every call.",
+  `Ads calls are billed separately from X's pay-per-use reads, so they do not appear in ` +
+    `x_usage_report — but the campaigns they manage spend your advertising budget.`,
+  `Point X_ADS_BASE_URL at ${SANDBOX_ADS_BASE_URL} for a free sandbox before touching a live ` +
+    `account. Set X_ADS_ALLOW_WRITES=1 to register the campaign-mutating tools; without it they ` +
+    `do not exist.`,
+  ...(config.adsAccountId
+    ? []
+    : [
+        "X_ADS_ACCOUNT_ID is unset. That is fine when you have exactly one ads account — it is " +
+          "resolved automatically — but with several you must pass accountId per call or set it.",
+      ]),
+];
+
+/**
  * The scopes actually requested at login. `tweet.write` is only asked for when
  * the paid write backend is on, so a reader never holds a permission it cannot
  * use — and the consent screen stays honest about what the server will do.
@@ -310,6 +395,13 @@ export const effectiveScopes = (config: Config): string[] => {
   const scopes = [...config.scopes];
   if (config.allowWrites && config.writeBackend === "api" && !scopes.includes("tweet.write")) {
     scopes.push("tweet.write");
+  }
+  // Same rule for ads: ask for read access only when the tools are registered,
+  // and for write access only when the write tools are. A read-only ads install
+  // never puts "manage your ad campaigns" on the consent screen.
+  if (config.adsEnabled && !scopes.includes("ads.read")) scopes.push("ads.read");
+  if (config.adsEnabled && config.adsAllowWrites && !scopes.includes("ads.write")) {
+    scopes.push("ads.write");
   }
   return scopes;
 };
