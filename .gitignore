@@ -8,3 +8,5 @@ coverage
 .idea
 .mcp.json
 tokens.json
+.env.*
+!.env.example
