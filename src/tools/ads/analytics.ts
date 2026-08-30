@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { AdsApiClient } from "#/client/ads";
@@ -61,7 +61,7 @@ export const registerAdsAnalyticsTools = (
         'This is the fast path — use it for "how did this campaign do last week". For longer ' +
         "ranges, segmentation, or more than 20 entities, use the async job tools instead. Times " +
         "must be whole hours, and endTime is exclusive.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         entity: z.enum(ENTITIES).describe("What kind of thing the ids refer to."),
         entityIds: z
@@ -87,7 +87,7 @@ export const registerAdsAnalyticsTools = (
           .min(1)
           .default(["ENGAGEMENT"])
           .describe("Which metric families to return. BILLING carries spend."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({
@@ -149,7 +149,7 @@ export const registerAdsAnalyticsTools = (
         "than 20 entities. Returns a job id — poll it with x_ads_get_stats_jobs until its status " +
         "is SUCCESS, then fetch the numbers with x_ads_download_stats_job. Queuing a job spends " +
         "nothing and changes nothing.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         entity: z.enum(ENTITIES).describe("What kind of thing the ids refer to."),
         entityIds: z.array(entityIdArg).min(1).max(200).describe("The entities to report on."),
@@ -173,7 +173,7 @@ export const registerAdsAnalyticsTools = (
           .string()
           .optional()
           .describe("Targeting-value id of a country. Required when segmentation is METROS."),
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async (args) =>
@@ -220,7 +220,7 @@ export const registerAdsAnalyticsTools = (
         "List this account's analytics jobs and their status. A job is ready when its status is " +
         "SUCCESS, at which point it carries a `url` to pass to x_ads_download_stats_job. Those " +
         "URLs expire, so re-read the job rather than reusing an old one.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         jobIds: z
           .array(z.string().min(1))
@@ -228,7 +228,7 @@ export const registerAdsAnalyticsTools = (
           .optional()
           .describe("Only these job ids. Omit to list recent jobs."),
         count: z.number().int().min(1).max(200).default(50).describe("How many jobs to return."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, jobIds, count }) =>
@@ -262,7 +262,7 @@ export const registerAdsAnalyticsTools = (
         "than a useful answer. Set raw to true for the underlying rows, bounded by maxRows. If " +
         "the download is refused as too large, re-run the job over fewer entities, a shorter " +
         "range, or a coarser granularity.",
-      inputSchema: {
+      inputSchema: z.object({
         url: z
           .string()
           .url()
@@ -278,7 +278,7 @@ export const registerAdsAnalyticsTools = (
           .max(2000)
           .default(200)
           .describe("Cap on rows returned when raw is true."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ url, raw, maxRows }) =>

@@ -1,4 +1,5 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { z } from "zod";
 
 import type { XApiClient } from "#/client/x";
 import type { ToolContext } from "#/tools/index";
@@ -17,7 +18,7 @@ export const registerUsageTools = (
         "What this session has spent against X's pay-per-use rates, how much the dedup cache " +
         "saved, and the pricing table used to compute it. Estimates only, counted since this " +
         "process started — the X developer console (console.x.com) is the authoritative record.",
-      inputSchema: {},
+      inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
     async () => wrap(async () => ctx.ledger.report(ctx.cache.stats())),
@@ -33,7 +34,7 @@ export const registerUsageTools = (
         "need to know how long to wait. Covers both the X API v2 and the Ads API, which have " +
         "separate budgets — the `api` field says which, and `scope` distinguishes the Ads " +
         "endpoint, account and cost limits.",
-      inputSchema: {},
+      inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
     async () =>

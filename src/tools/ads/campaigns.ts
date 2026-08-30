@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { AdsApiClient } from "#/client/ads";
@@ -105,7 +105,7 @@ export const registerAdsCampaignTools = (
         "come back in both major units (`daily_budget`) and X's raw millionths " +
         "(`daily_budget_amount_local_micro`) — read the former. Note that in v12 campaigns carry " +
         "no start or end date; flight dates live on their line items.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         campaignIds: z
           .array(entityIdArg)
@@ -114,7 +114,7 @@ export const registerAdsCampaignTools = (
           .describe("Only these campaign ids. Omit to list them all."),
         count: adsCountArg,
         withDeleted: z.boolean().default(false).describe("Include deleted campaigns."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, campaignIds, count, withDeleted }) =>
@@ -147,7 +147,7 @@ export const registerAdsCampaignTools = (
         "and flight dates under a campaign. Targeting and creatives attach to a line item, not " +
         "to its campaign, so this is the id you need for x_ads_get_targeting_criteria and " +
         "x_ads_create_promoted_tweet.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         campaignIds: z
           .array(entityIdArg)
@@ -157,7 +157,7 @@ export const registerAdsCampaignTools = (
         lineItemIds: z.array(entityIdArg).max(200).optional().describe("Only these line item ids."),
         count: adsCountArg,
         withDeleted: z.boolean().default(false).describe("Include deleted line items."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, campaignIds, lineItemIds, count, withDeleted }) =>
@@ -189,7 +189,7 @@ export const registerAdsCampaignTools = (
       description:
         "List the posts promoted under an account's line items. Each entry pairs a line item with " +
         "the post id it is promoting; look the post itself up with x_get_post if you need its text.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         lineItemIds: z
           .array(entityIdArg)
@@ -197,7 +197,7 @@ export const registerAdsCampaignTools = (
           .optional()
           .describe("Only promoted posts under these line items."),
         count: adsCountArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, lineItemIds, count }) =>
@@ -231,7 +231,7 @@ export const registerAdsCampaignTools = (
         "pre-multiplied figure. The campaign is created PAUSED unless you set " +
         "activateImmediately, so the normal flow is: create, add a line item, add targeting, then " +
         "activate. In v12 a campaign has no dates of its own; set them on the line item.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         fundingInstrumentId: entityIdArg.describe(
           "Which funding instrument pays for this. List them with x_ads_get_funding_instruments.",
@@ -246,7 +246,7 @@ export const registerAdsCampaignTools = (
           .describe("Optional lifetime cap, in the same major units as dailyBudget."),
         activateImmediately: activateArg,
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async ({
@@ -304,7 +304,7 @@ export const registerAdsCampaignTools = (
       description:
         "Change a campaign's name, budget or status. Budgets are in MAJOR currency units, as on " +
         "create. Raising a daily budget on an ACTIVE campaign increases spending immediately.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         campaignId: entityIdArg.describe("The campaign to change."),
         name: z.string().min(1).max(255).optional().describe("New name."),
@@ -315,7 +315,7 @@ export const registerAdsCampaignTools = (
           .optional()
           .describe("ACTIVE resumes delivery and spending; PAUSED stops it."),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     },
     async ({ accountId, campaignId, name, dailyBudget, totalBudget, entityStatus }) =>
@@ -356,11 +356,11 @@ export const registerAdsCampaignTools = (
         "Delete a campaign. This also stops its line items. X keeps deleted campaigns visible to " +
         "`withDeleted` reads but they cannot be revived — pause the campaign instead if you may " +
         "want it back.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         campaignId: entityIdArg.describe("The campaign to delete."),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
     async ({ accountId, campaignId }) =>
@@ -385,7 +385,7 @@ export const registerAdsCampaignTools = (
         "placements and flight dates. Created PAUSED unless activateImmediately is set. Bids are " +
         "in MAJOR currency units. A line item with no targeting criteria and no promoted post " +
         "will not deliver, so this is usually the second of three calls.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         campaignId: entityIdArg.describe("The campaign this belongs to."),
         name: z.string().min(1).max(255).optional().describe("Line item name."),
@@ -403,7 +403,7 @@ export const registerAdsCampaignTools = (
         totalBudget: budgetArg.optional().describe("Lifetime cap for this line item."),
         activateImmediately: activateArg,
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async (args) =>
@@ -449,7 +449,7 @@ export const registerAdsCampaignTools = (
       description:
         "Change a line item's name, bid, dates or status. Bids and budgets are in MAJOR currency " +
         "units, as on create.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         lineItemId: entityIdArg.describe("The line item to change."),
         name: z.string().min(1).max(255).optional().describe("New name."),
@@ -459,7 +459,7 @@ export const registerAdsCampaignTools = (
         endTime: adsTimeArg.optional().describe("New end time."),
         entityStatus: z.enum(["ACTIVE", "PAUSED"]).optional().describe("Resume or stop delivery."),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     },
     async (args) =>
@@ -488,11 +488,11 @@ export const registerAdsCampaignTools = (
       description:
         "Delete a line item. Irreversible — pause it instead if you may want it back. Its " +
         "targeting criteria and promoted posts stop delivering with it.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         lineItemId: entityIdArg.describe("The line item to delete."),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
     async ({ accountId, lineItemId }) =>
@@ -516,7 +516,7 @@ export const registerAdsCampaignTools = (
         "Promote existing posts under a line item. The posts must already exist — compose one " +
         "first with x_compose_post, or pick an id from x_get_user_posts. Promotion begins when " +
         "the line item is active.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         lineItemId: entityIdArg.describe("The line item that will carry these posts."),
         postIds: z
@@ -525,7 +525,7 @@ export const registerAdsCampaignTools = (
           .max(50)
           .describe('Post ids to promote, e.g. ["1799000000000000001"].'),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async ({ accountId, lineItemId, postIds }) =>
@@ -551,13 +551,13 @@ export const registerAdsCampaignTools = (
       description:
         "Stop promoting a post by removing it from its line item. The post itself is untouched " +
         "and stays on the timeline — use x_delete_post to remove that.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         promotedTweetId: entityIdArg.describe(
           "The promoted-tweet id from x_ads_get_promoted_tweets, not the post id.",
         ),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
     async ({ accountId, promotedTweetId }) =>
@@ -582,7 +582,7 @@ export const registerAdsCampaignTools = (
         "Activate or pause a campaign or line item. This is the switch that starts and stops " +
         "spending: ACTIVE begins delivery immediately at the entity's configured budget. Check " +
         "the budget with x_ads_get_campaigns before activating something you did not just create.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         entityType: z
           .enum(["campaign", "line_item"])
@@ -592,7 +592,7 @@ export const registerAdsCampaignTools = (
           .enum(["ACTIVE", "PAUSED"])
           .describe("ACTIVE starts delivery and spending. PAUSED stops it."),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     },
     async ({ accountId, entityType, entityId, status }) =>

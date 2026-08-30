@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { fileMode } from "#/client/tokens";
@@ -16,7 +16,7 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
         "or neither. Shows the logged-in handle, granted scopes and token expiry, and whether " +
         "the Ads API tools are registered and against which environment. Call this first if the " +
         "X API tools seem to be missing — it explains exactly what to configure.",
-      inputSchema: {},
+      inputSchema: z.object({}),
       annotations: { readOnlyHint: true },
     },
     async () =>
@@ -105,9 +105,9 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
         "app, waits up to two minutes for the callback, then stores a refresh token in the token " +
         "file with mode 600. Only needed for bookmarks, the home timeline and API writes — " +
         "public reads and search work with the Bearer token alone.",
-      inputSchema: {
+      inputSchema: z.object({
         open: z.boolean().default(true).describe("Open the authorize URL in your browser."),
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false },
     },
     async ({ open }) =>
@@ -131,11 +131,11 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
       description:
         "Delete the stored OAuth2 tokens. The app-only Bearer token is unaffected, so public " +
         "reads and search keep working.",
-      inputSchema: {
+      inputSchema: z.object({
         confirm: z
           .literal(true)
           .describe("Must be true. You will need to run the login flow again to undo this."),
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
     async () =>

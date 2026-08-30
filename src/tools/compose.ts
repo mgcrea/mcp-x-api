@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { isRecord } from "#/client/shape";
@@ -43,12 +43,12 @@ export const registerComposeTools = (
         "weighted characters, not plain ones: every URL costs 23 whatever its length, and CJK " +
         "characters and emoji cost 2 each — so 140 Japanese characters is already a full post. " +
         "Runs locally; no API call, no cost.",
-      inputSchema: {
+      inputSchema: z.object({
         text: textArg,
         url: urlArg,
         hashtags: hashtagsArg,
         via: viaArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ text, url, hashtags, via }) =>
@@ -74,7 +74,7 @@ export const registerComposeTools = (
         "Prefer it over x_create_post, which costs $0.015 per post ($0.200 with a URL). " +
         "Web intents cannot attach media, create polls, make native quote posts, or build " +
         "threads — those need the paid API. Replying to a post does work.",
-      inputSchema: {
+      inputSchema: z.object({
         text: textArg,
         url: urlArg,
         hashtags: hashtagsArg,
@@ -89,7 +89,7 @@ export const registerComposeTools = (
             "Open the URL in your browser. Defaults to the server's X_API_AUTO_OPEN_BROWSER " +
               "setting. The URL is returned either way.",
           ),
-      },
+      }),
       // Not readOnly (it may open a browser), but deliberately NOT gated behind
       // allowWrites: it changes nothing without a human click, and gating the
       // free path would push people toward the paid one.
@@ -143,7 +143,7 @@ export const registerComposeTools = (
         "if it contains a URL — forty times a post read. x_compose_post does the same thing for " +
         "free via a browser click; use this only when you specifically need unattended posting, " +
         "a thread, or a native quote post.",
-      inputSchema: {
+      inputSchema: z.object({
         text: textArg,
         replyToPostId: postIdArg.optional().describe("Post id to reply to."),
         quotePostId: postIdArg.optional().describe("Post id to quote."),
@@ -152,7 +152,7 @@ export const registerComposeTools = (
           .optional()
           .describe("Who may reply. Defaults to everyone."),
         confirm: confirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async ({ text, replyToPostId, quotePostId, replySettings }) =>
@@ -198,7 +198,7 @@ export const registerComposeTools = (
       description:
         "Delete one of your own posts. Irreversible — X keeps no undo, and the id cannot be " +
         "reused.",
-      inputSchema: { postId: postIdArg, confirm: confirmArg },
+      inputSchema: z.object({ postId: postIdArg, confirm: confirmArg }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
     async ({ postId }) =>

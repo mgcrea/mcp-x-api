@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { isRecord, shapePostsResponse, type ShapedPost } from "#/client/shape";
@@ -35,7 +35,7 @@ export const registerPostTools = (
         "Get one post by id, with its author, metrics, media and any quoted or replied-to post " +
         "already inlined. Reading the same post twice in one UTC day is free — X does not bill " +
         "a repeat read.",
-      inputSchema: { postId: postIdArg },
+      inputSchema: z.object({ postId: postIdArg }),
       annotations: { readOnlyHint: true },
     },
     async ({ postId }) =>
@@ -68,13 +68,13 @@ export const registerPostTools = (
         "x_get_post repeatedly — X bills per post either way, but one request is far faster and " +
         "spends only one unit of rate limit. Ids that cannot be served come back under " +
         "`not_found` rather than failing the call.",
-      inputSchema: {
+      inputSchema: z.object({
         postIds: z
           .array(postIdArg)
           .min(1)
           .max(100)
           .describe("Post ids to look up, up to 100 in one call."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ postIds }) =>
@@ -105,10 +105,10 @@ export const registerPostTools = (
         "Reconstruct a conversation: every reply sharing the post's conversation_id, oldest " +
         "first. Note that this searches the last 7 days only, so an older thread returns just " +
         "the root post. Costs one post read per reply returned.",
-      inputSchema: {
+      inputSchema: z.object({
         postId: postIdArg,
         maxResults: maxResultsArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ postId, maxResults }) =>
@@ -165,11 +165,11 @@ export const registerPostTools = (
     {
       title: "X: Get Quotes",
       description: "List posts quoting a given post, newest first.",
-      inputSchema: {
+      inputSchema: z.object({
         postId: postIdArg,
         maxResults: maxResultsArg,
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ postId, maxResults, paginationToken }) =>

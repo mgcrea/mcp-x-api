@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { UserContextRequiredError } from "#/client/errors";
@@ -69,7 +69,7 @@ export const registerTimelineTools = (
         "Your own reverse-chronological home timeline — the posts from accounts you follow. " +
         "Requires `x-api-mcp login`; X only ever serves this for the authenticated account, so " +
         "there is no way to read someone else's. Billed at the cheaper owned-read rate.",
-      inputSchema: {
+      inputSchema: z.object({
         maxResults: maxResultsArg,
         excludeReplies: z.boolean().default(false).describe("Leave out replies."),
         excludeReposts: z.boolean().default(false).describe("Leave out reposts (retweets)."),
@@ -79,7 +79,7 @@ export const registerTimelineTools = (
           .optional()
           .describe("Only posts newer than this id — useful for polling."),
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ maxResults, excludeReplies, excludeReposts, sinceId, paginationToken }) =>
@@ -121,10 +121,10 @@ export const registerTimelineTools = (
       description:
         "Your saved bookmarks, newest first. Requires `x-api-mcp login` with the " +
         "`bookmark.read` scope — an app-only Bearer token cannot reach bookmarks at all.",
-      inputSchema: {
+      inputSchema: z.object({
         maxResults: maxResultsArg,
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ maxResults, paginationToken }) =>

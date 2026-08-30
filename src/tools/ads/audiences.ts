@@ -1,4 +1,5 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { z } from "zod";
 
 import type { AdsApiClient } from "#/client/ads";
 import { accountIdArg, adsCostNote, adsCountArg, shapeAds } from "#/tools/ads/util";
@@ -18,7 +19,7 @@ export const registerAdsAudienceTools = (
         "id as the targetingValue of a CUSTOM_AUDIENCE criterion. Read-only: uploading audience " +
         "members means handling personal data and is deliberately not exposed here. Note that " +
         '"tailored audiences" is the old name for these and its endpoints are long gone.',
-      inputSchema: { accountId: accountIdArg, count: adsCountArg },
+      inputSchema: z.object({ accountId: accountIdArg, count: adsCountArg }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, count }) =>

@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { isRecord, shapePostsResponse } from "#/client/shape";
@@ -61,7 +61,7 @@ export const registerQueryBuilderTool = (server: McpServer): void => {
         "Build an X search query from structured parts and explain each operator it used. Runs " +
         "entirely locally: no API call, no cost, no credentials. Use this to get the query right " +
         "for free, then pass the result to x_count_recent and only then to x_search_recent.",
-      inputSchema: {
+      inputSchema: z.object({
         allWords: z.string().optional().describe('Words that must all appear, e.g. "rust async".'),
         exactPhrase: z.string().optional().describe("A phrase that must appear verbatim."),
         anyWords: z.array(z.string()).optional().describe("At least one of these must appear."),
@@ -79,7 +79,7 @@ export const registerQueryBuilderTool = (server: McpServer): void => {
           .optional()
           .describe("true to require reposts, false to exclude them. False is the usual choice."),
         isQuote: z.boolean().optional().describe("true to require quote posts, false to exclude."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async (args) => wrap(async () => buildSearchQuery(args)),
@@ -153,7 +153,7 @@ export const registerSearchTools = (
         '`to:handle`, `#tag`, `"exact phrase"`, `lang:en`, `has:media`, `has:links`, ' +
         "`url:example.com`, `conversation_id:`, and negation with `-is:retweet` or `-is:reply`. " +
         "Run x_count_recent first to see how big a query is before paying to read it.",
-      inputSchema: {
+      inputSchema: z.object({
         query: queryArg,
         maxResults: maxResultsArg,
         sortOrder: z
@@ -164,7 +164,7 @@ export const registerSearchTools = (
         sinceId: z.string().regex(/^\d+$/).optional().describe("Only posts newer than this id."),
         untilId: z.string().regex(/^\d+$/).optional().describe("Only posts older than this id."),
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async (args) => wrap(() => runSearch("/2/tweets/search/recent", args, "x_search_recent")),
@@ -178,14 +178,14 @@ export const registerSearchTools = (
         "Count how many posts match a query over the last 7 days WITHOUT reading any of them. " +
         "This endpoint returns only totals, so it costs nothing per post — always run it before " +
         "a broad x_search_recent to find out whether you are about to read 10 posts or 10,000.",
-      inputSchema: {
+      inputSchema: z.object({
         query: queryArg,
         granularity: z
           .enum(["minute", "hour", "day"])
           .default("day")
           .describe("Bucket size for the time series. Defaults to day."),
         ...timeArgs,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ query, granularity, startTime, endTime }) =>
@@ -229,7 +229,7 @@ export const registerSearchTools = (
         "Search the FULL archive, back to X's first post in March 2006 — not just the last 7 " +
         "days. Requires a paid access tier and is limited to one request per second, so it is " +
         "slower than x_search_recent. Same query syntax. Costs the same per post read.",
-      inputSchema: {
+      inputSchema: z.object({
         query: queryArg,
         maxResults: maxResultsArg,
         sortOrder: z.enum(["recency", "relevancy"]).optional(),
@@ -237,7 +237,7 @@ export const registerSearchTools = (
         sinceId: z.string().regex(/^\d+$/).optional(),
         untilId: z.string().regex(/^\d+$/).optional(),
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async (args) =>

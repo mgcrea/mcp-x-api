@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 
 import type { AdsApiClient } from "#/client/ads";
 import type { TokenProvider } from "#/client/auth";

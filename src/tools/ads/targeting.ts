@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { AdsApiClient } from "#/client/ads";
@@ -50,7 +50,7 @@ export const registerAdsTargetingTools = (
         "Read the targeting attached to one or more line items — the interests, locations, " +
         "keywords, follower look-alikes and audiences that decide who sees the ads. Targeting " +
         "hangs off line items, never off campaigns.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         lineItemIds: z
           .array(entityIdArg)
@@ -58,7 +58,7 @@ export const registerAdsTargetingTools = (
           .max(200)
           .describe("The line items whose targeting you want. At least one is required."),
         count: adsCountArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, lineItemIds, count }) =>
@@ -88,7 +88,7 @@ export const registerAdsTargetingTools = (
         "— so this is the step that turns an intention into a `targetingValue` you can pass to " +
         "x_ads_create_targeting_criterion. There is no keyword option here: keywords are free " +
         "text and need no lookup.",
-      inputSchema: {
+      inputSchema: z.object({
         type: z
           .enum(OPTION_TYPES)
           .describe("Which targeting dimension to search. Each maps to one X lookup endpoint."),
@@ -116,7 +116,7 @@ export const registerAdsTargetingTools = (
           .optional()
           .describe('Two-letter country filter where the endpoint supports one, e.g. "FR".'),
         count: adsCountArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ type, q, locationType, locale, eventTypes, countryCode, count }) =>
@@ -157,7 +157,7 @@ export const registerAdsTargetingTools = (
         "is rejected. Criteria of different types intersect (AND) while criteria of the same type " +
         "union (OR), so adding two locations widens the audience while adding a location and an " +
         "interest narrows it. Broadening targeting on an active line item increases spending.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         lineItemId: entityIdArg.describe("The line item to target."),
         targetingType: z
@@ -179,7 +179,7 @@ export const registerAdsTargetingTools = (
           .default("EQ")
           .describe("How to compare. EQ is right for almost everything; NE excludes."),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async ({ accountId, lineItemId, targetingType, targetingValue, operatorType }) =>
@@ -208,13 +208,13 @@ export const registerAdsTargetingTools = (
         "Remove one targeting criterion from a line item. Narrowing or widening targeting on an " +
         "active line item changes who sees the ads immediately. Removing the last criterion " +
         "leaves the line item targeting everyone, which usually spends faster, not slower.",
-      inputSchema: {
+      inputSchema: z.object({
         accountId: accountIdArg,
         targetingCriterionId: entityIdArg.describe(
           "The criterion id from x_ads_get_targeting_criteria.",
         ),
         confirm: adsConfirmArg,
-      },
+      }),
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     },
     async ({ accountId, targetingCriterionId }) =>

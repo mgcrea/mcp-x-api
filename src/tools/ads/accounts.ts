@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { AdsApiClient } from "#/client/ads";
@@ -21,13 +21,13 @@ export const registerAdsAccountTools = (
         "List the advertising accounts this login can reach, with their name, currency, timezone " +
         "and approval status. Start here: every other ads tool needs an account id, and the " +
         "currency and timezone returned here decide how budgets and analytics dates are read.",
-      inputSchema: {
+      inputSchema: z.object({
         count: adsCountArg,
         withDeleted: z
           .boolean()
           .default(false)
           .describe("Include deleted accounts. Off by default."),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ count, withDeleted }) =>
@@ -57,7 +57,7 @@ export const registerAdsAccountTools = (
         "List an account's funding instruments — the payment sources campaigns draw from. A " +
         "campaign cannot be created without one, and the instrument's `currency` is the currency " +
         "every budget on that campaign is stated in. Check `able_to_fund` before using one.",
-      inputSchema: { accountId: accountIdArg, count: adsCountArg },
+      inputSchema: z.object({ accountId: accountIdArg, count: adsCountArg }),
       annotations: { readOnlyHint: true },
     },
     async ({ accountId, count }) =>
@@ -89,7 +89,7 @@ export const registerAdsAccountTools = (
         "Create a throwaway ads account in the sandbox, complete with a funding instrument, so " +
         "the campaign tools can be exercised without spending anything. Sandbox only — this tool " +
         "is not registered against production.",
-      inputSchema: {},
+      inputSchema: z.object({}),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async () =>

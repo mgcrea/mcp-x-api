@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { PreconditionError } from "#/client/errors";
@@ -60,10 +60,10 @@ export const registerUserTools = (
       description:
         "Look up one profile by handle or numeric id: bio, follower and post counts, join date. " +
         "A user read costs about $0.010, twice a post read.",
-      inputSchema: {
+      inputSchema: z.object({
         username: usernameArg.optional(),
         userId: userIdArg.optional(),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ username, userId }) =>
@@ -110,7 +110,7 @@ export const registerUserTools = (
       description:
         "Look up up to 100 profiles at once, by handle or by id. One request instead of many, " +
         "billed per profile returned.",
-      inputSchema: {
+      inputSchema: z.object({
         usernames: z
           .array(usernameArg)
           .min(1)
@@ -118,7 +118,7 @@ export const registerUserTools = (
           .optional()
           .describe('Handles to look up, e.g. ["mgcrea", "acme"].'),
         userIds: z.array(userIdArg).min(1).max(100).optional(),
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ usernames, userIds }) =>
@@ -170,7 +170,7 @@ export const registerUserTools = (
         "A user's own recent posts, newest first. Replies and reposts are excluded by default " +
         "so you get their original writing; set the flags to include them. Reaches back roughly " +
         "3200 posts, X's timeline limit.",
-      inputSchema: {
+      inputSchema: z.object({
         username: usernameArg.optional(),
         userId: userIdArg.optional(),
         maxResults: maxResultsArg,
@@ -188,7 +188,7 @@ export const registerUserTools = (
           .describe('Only posts at or after this ISO-8601 UTC time, e.g. "2026-07-01T00:00:00Z".'),
         endTime: z.string().optional().describe("Only posts before this ISO-8601 UTC time."),
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({
@@ -239,14 +239,14 @@ export const registerUserTools = (
     {
       title: "X: Get User Mentions",
       description: "Posts mentioning a user, newest first — who is talking about them, and what.",
-      inputSchema: {
+      inputSchema: z.object({
         username: usernameArg.optional(),
         userId: userIdArg.optional(),
         maxResults: maxResultsArg,
         startTime: z.string().optional().describe("Only posts at or after this ISO-8601 UTC time."),
         endTime: z.string().optional().describe("Only posts before this ISO-8601 UTC time."),
         paginationToken: paginationTokenArg,
-      },
+      }),
       annotations: { readOnlyHint: true },
     },
     async ({ username, userId, maxResults, startTime, endTime, paginationToken }) =>
