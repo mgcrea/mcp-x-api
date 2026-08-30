@@ -30,6 +30,7 @@ export const registerPostTools = (
   server.registerTool(
     "x_get_post",
     {
+      title: "X: Get Post",
       description:
         "Get one post by id, with its author, metrics, media and any quoted or replied-to post " +
         "already inlined. Reading the same post twice in one UTC day is free — X does not bill " +
@@ -61,6 +62,7 @@ export const registerPostTools = (
   server.registerTool(
     "x_get_posts",
     {
+      title: "X: Get Posts",
       description:
         "Get up to 100 posts by id in a single request. Always prefer this over calling " +
         "x_get_post repeatedly — X bills per post either way, but one request is far faster and " +
@@ -98,6 +100,7 @@ export const registerPostTools = (
   server.registerTool(
     "x_get_thread",
     {
+      title: "X: Get Thread",
       description:
         "Reconstruct a conversation: every reply sharing the post's conversation_id, oldest " +
         "first. Note that this searches the last 7 days only, so an older thread returns just " +
@@ -160,6 +163,7 @@ export const registerPostTools = (
   server.registerTool(
     "x_get_quotes",
     {
+      title: "X: Get Quotes",
       description: "List posts quoting a given post, newest first.",
       inputSchema: {
         postId: postIdArg,

@@ -12,6 +12,7 @@ export const registerAdsAudienceTools = (
   server.registerTool(
     "x_ads_get_audiences",
     {
+      title: "X: Ads Get Audiences",
       description:
         "List an account's custom audiences with their size and targetability. Use an audience's " +
         "id as the targetingValue of a CUSTOM_AUDIENCE criterion. Read-only: uploading audience " +

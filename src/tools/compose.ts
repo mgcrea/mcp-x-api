@@ -37,6 +37,7 @@ export const registerComposeTools = (
   server.registerTool(
     "x_validate_post",
     {
+      title: "X: Validate Post",
       description:
         "Check a draft against X's 280-character limit before doing anything with it. X counts " +
         "weighted characters, not plain ones: every URL costs 23 whatever its length, and CJK " +
@@ -65,6 +66,7 @@ export const registerComposeTools = (
   server.registerTool(
     "x_compose_post",
     {
+      title: "X: Compose Post",
       description:
         "The default way to post. Validates the draft and returns an x.com/intent/tweet URL " +
         "that opens X's composer pre-filled — you click Post yourself. This is FREE: no API " +
@@ -135,6 +137,7 @@ export const registerComposeTools = (
   server.registerTool(
     "x_create_post",
     {
+      title: "X: Create Post",
       description:
         "Publish a post directly through the API. COSTS MONEY: about $0.015 per post, or $0.200 " +
         "if it contains a URL — forty times a post read. x_compose_post does the same thing for " +
@@ -191,6 +194,7 @@ export const registerComposeTools = (
   server.registerTool(
     "x_delete_post",
     {
+      title: "X: Delete Post",
       description:
         "Delete one of your own posts. Irreversible — X keeps no undo, and the id cannot be " +
         "reused.",

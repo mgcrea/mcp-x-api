@@ -55,6 +55,7 @@ export const registerAdsAnalyticsTools = (
   server.registerTool(
     "x_ads_get_stats",
     {
+      title: "X: Ads Get Stats",
       description:
         "Performance metrics for up to 20 entities over at most 7 days, returned immediately. " +
         'This is the fast path — use it for "how did this campaign do last week". For longer ' +
@@ -141,6 +142,7 @@ export const registerAdsAnalyticsTools = (
   server.registerTool(
     "x_ads_create_stats_job",
     {
+      title: "X: Ads Create Stats Job",
       description:
         "Queue an asynchronous analytics job, for what the synchronous endpoint cannot do: up to " +
         "90 days (45 when segmented), segmentation by age, gender, platform or metro, and more " +
@@ -213,6 +215,7 @@ export const registerAdsAnalyticsTools = (
   server.registerTool(
     "x_ads_get_stats_jobs",
     {
+      title: "X: Ads Get Stats Jobs",
       description:
         "List this account's analytics jobs and their status. A job is ready when its status is " +
         "SUCCESS, at which point it carries a `url` to pass to x_ads_download_stats_job. Those " +
@@ -252,6 +255,7 @@ export const registerAdsAnalyticsTools = (
   server.registerTool(
     "x_ads_download_stats_job",
     {
+      title: "X: Ads Download Stats Job",
       description:
         "Fetch and decompress a finished analytics job's results. By default it returns a " +
         "per-entity summary rather than every row, because a segmented 90-day job is far larger " +

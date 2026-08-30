@@ -56,6 +56,7 @@ export const registerUserTools = (
   server.registerTool(
     "x_get_user",
     {
+      title: "X: Get User",
       description:
         "Look up one profile by handle or numeric id: bio, follower and post counts, join date. " +
         "A user read costs about $0.010, twice a post read.",
@@ -105,6 +106,7 @@ export const registerUserTools = (
   server.registerTool(
     "x_get_users",
     {
+      title: "X: Get Users",
       description:
         "Look up up to 100 profiles at once, by handle or by id. One request instead of many, " +
         "billed per profile returned.",
@@ -163,6 +165,7 @@ export const registerUserTools = (
   server.registerTool(
     "x_get_user_posts",
     {
+      title: "X: Get User Posts",
       description:
         "A user's own recent posts, newest first. Replies and reposts are excluded by default " +
         "so you get their original writing; set the flags to include them. Reaches back roughly " +
@@ -234,6 +237,7 @@ export const registerUserTools = (
   server.registerTool(
     "x_get_user_mentions",
     {
+      title: "X: Get User Mentions",
       description: "Posts mentioning a user, newest first — who is talking about them, and what.",
       inputSchema: {
         username: usernameArg.optional(),

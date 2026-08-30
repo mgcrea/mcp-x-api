@@ -45,6 +45,7 @@ export const registerAdsTargetingTools = (
   server.registerTool(
     "x_ads_get_targeting_criteria",
     {
+      title: "X: Ads Get Targeting Criteria",
       description:
         "Read the targeting attached to one or more line items — the interests, locations, " +
         "keywords, follower look-alikes and audiences that decide who sees the ads. Targeting " +
@@ -80,6 +81,7 @@ export const registerAdsTargetingTools = (
   server.registerTool(
     "x_ads_search_targeting_options",
     {
+      title: "X: Ads Search Targeting Options",
       description:
         "Look up the valid values for a targeting type before using one. X's targeting takes " +
         'opaque ids, not names — a location is something like "96683cc9126741d1", not "Paris" ' +
@@ -148,6 +150,7 @@ export const registerAdsTargetingTools = (
   server.registerTool(
     "x_ads_create_targeting_criterion",
     {
+      title: "X: Ads Create Targeting Criterion",
       description:
         "Add one targeting criterion to a line item. Look the value up first with " +
         "x_ads_search_targeting_options — X takes opaque ids for most types, and an invented one " +
@@ -200,6 +203,7 @@ export const registerAdsTargetingTools = (
   server.registerTool(
     "x_ads_delete_targeting_criterion",
     {
+      title: "X: Ads Delete Targeting Criterion",
       description:
         "Remove one targeting criterion from a line item. Narrowing or widening targeting on an " +
         "active line item changes who sees the ads immediately. Removing the last criterion " +

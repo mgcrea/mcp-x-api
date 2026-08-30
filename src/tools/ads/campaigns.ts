@@ -99,6 +99,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_get_campaigns",
     {
+      title: "X: Ads Get Campaigns",
       description:
         "List an account's campaigns with their budgets, funding instrument and status. Budgets " +
         "come back in both major units (`daily_budget`) and X's raw millionths " +
@@ -140,6 +141,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_get_line_items",
     {
+      title: "X: Ads Get Line Items",
       description:
         "List an account's line items — the ad groups that carry the objective, bid, placements " +
         "and flight dates under a campaign. Targeting and creatives attach to a line item, not " +
@@ -183,6 +185,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_get_promoted_tweets",
     {
+      title: "X: Ads Get Promoted Tweets",
       description:
         "List the posts promoted under an account's line items. Each entry pairs a line item with " +
         "the post id it is promoting; look the post itself up with x_get_post if you need its text.",
@@ -221,6 +224,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_create_campaign",
     {
+      title: "X: Ads Create Campaign",
       description:
         "Create a campaign. SPENDS MONEY once activated. Budgets are given in MAJOR currency " +
         "units — 50 means 50.00 — and converted to X's millionths for you; never pass a " +
@@ -296,6 +300,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_update_campaign",
     {
+      title: "X: Ads Update Campaign",
       description:
         "Change a campaign's name, budget or status. Budgets are in MAJOR currency units, as on " +
         "create. Raising a daily budget on an ACTIVE campaign increases spending immediately.",
@@ -346,6 +351,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_delete_campaign",
     {
+      title: "X: Ads Delete Campaign",
       description:
         "Delete a campaign. This also stops its line items. X keeps deleted campaigns visible to " +
         "`withDeleted` reads but they cannot be revived — pause the campaign instead if you may " +
@@ -373,6 +379,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_create_line_item",
     {
+      title: "X: Ads Create Line Item",
       description:
         "Create a line item under a campaign — the ad group carrying the objective, bid, " +
         "placements and flight dates. Created PAUSED unless activateImmediately is set. Bids are " +
@@ -438,6 +445,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_update_line_item",
     {
+      title: "X: Ads Update Line Item",
       description:
         "Change a line item's name, bid, dates or status. Bids and budgets are in MAJOR currency " +
         "units, as on create.",
@@ -476,6 +484,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_delete_line_item",
     {
+      title: "X: Ads Delete Line Item",
       description:
         "Delete a line item. Irreversible — pause it instead if you may want it back. Its " +
         "targeting criteria and promoted posts stop delivering with it.",
@@ -502,6 +511,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_create_promoted_tweet",
     {
+      title: "X: Ads Create Promoted Tweet",
       description:
         "Promote existing posts under a line item. The posts must already exist — compose one " +
         "first with x_compose_post, or pick an id from x_get_user_posts. Promotion begins when " +
@@ -537,6 +547,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_delete_promoted_tweet",
     {
+      title: "X: Ads Delete Promoted Tweet",
       description:
         "Stop promoting a post by removing it from its line item. The post itself is untouched " +
         "and stays on the timeline — use x_delete_post to remove that.",
@@ -566,6 +577,7 @@ export const registerAdsCampaignTools = (
   server.registerTool(
     "x_ads_set_entity_status",
     {
+      title: "X: Ads Set Entity Status",
       description:
         "Activate or pause a campaign or line item. This is the switch that starts and stops " +
         "spending: ACTIVE begins delivery immediately at the entity's configured budget. Check " +

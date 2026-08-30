@@ -16,6 +16,7 @@ export const registerAdsAccountTools = (
   server.registerTool(
     "x_ads_get_accounts",
     {
+      title: "X: Ads Get Accounts",
       description:
         "List the advertising accounts this login can reach, with their name, currency, timezone " +
         "and approval status. Start here: every other ads tool needs an account id, and the " +
@@ -51,6 +52,7 @@ export const registerAdsAccountTools = (
   server.registerTool(
     "x_ads_get_funding_instruments",
     {
+      title: "X: Ads Get Funding Instruments",
       description:
         "List an account's funding instruments — the payment sources campaigns draw from. A " +
         "campaign cannot be created without one, and the instrument's `currency` is the currency " +
@@ -82,6 +84,7 @@ export const registerAdsAccountTools = (
   server.registerTool(
     "x_ads_create_sandbox_account",
     {
+      title: "X: Ads Create Sandbox Account",
       description:
         "Create a throwaway ads account in the sandbox, complete with a funding instrument, so " +
         "the campaign tools can be exercised without spending anything. Sandbox only — this tool " +

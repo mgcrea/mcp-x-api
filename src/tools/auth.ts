@@ -9,6 +9,7 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
   server.registerTool(
     "x_auth_status",
     {
+      title: "X: Auth Status",
       description:
         "Which credentials this server is holding: an app-only Bearer token (enough for public " +
         "reads and search), an OAuth2 user session (needed for bookmarks and the home timeline), " +
@@ -98,6 +99,7 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
   server.registerTool(
     "x_auth_login",
     {
+      title: "X: Auth Login",
       description:
         "Start the OAuth2 login. Prints a URL (and opens your browser) for you to authorize the " +
         "app, waits up to two minutes for the callback, then stores a refresh token in the token " +
@@ -125,6 +127,7 @@ export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => 
   server.registerTool(
     "x_auth_logout",
     {
+      title: "X: Auth Logout",
       description:
         "Delete the stored OAuth2 tokens. The app-only Bearer token is unaffected, so public " +
         "reads and search keep working.",

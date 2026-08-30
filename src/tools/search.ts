@@ -56,6 +56,7 @@ export const registerQueryBuilderTool = (server: McpServer): void => {
   server.registerTool(
     "x_build_search_query",
     {
+      title: "X: Build Search Query",
       description:
         "Build an X search query from structured parts and explain each operator it used. Runs " +
         "entirely locally: no API call, no cost, no credentials. Use this to get the query right " +
@@ -146,6 +147,7 @@ export const registerSearchTools = (
   server.registerTool(
     "x_search_recent",
     {
+      title: "X: Search Recent",
       description:
         "Search posts from the last 7 days. Supports X's full query syntax: `from:handle`, " +
         '`to:handle`, `#tag`, `"exact phrase"`, `lang:en`, `has:media`, `has:links`, ' +
@@ -171,6 +173,7 @@ export const registerSearchTools = (
   server.registerTool(
     "x_count_recent",
     {
+      title: "X: Count Recent",
       description:
         "Count how many posts match a query over the last 7 days WITHOUT reading any of them. " +
         "This endpoint returns only totals, so it costs nothing per post — always run it before " +
@@ -221,6 +224,7 @@ export const registerSearchTools = (
   server.registerTool(
     "x_search_all",
     {
+      title: "X: Search All",
       description:
         "Search the FULL archive, back to X's first post in March 2006 — not just the last 7 " +
         "days. Requires a paid access tier and is limited to one request per second, so it is " +

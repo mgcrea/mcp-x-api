@@ -64,6 +64,7 @@ export const registerTimelineTools = (
   server.registerTool(
     "x_get_home_timeline",
     {
+      title: "X: Get Home Timeline",
       description:
         "Your own reverse-chronological home timeline — the posts from accounts you follow. " +
         "Requires `x-api-mcp login`; X only ever serves this for the authenticated account, so " +
@@ -116,6 +117,7 @@ export const registerTimelineTools = (
   server.registerTool(
     "x_get_bookmarks",
     {
+      title: "X: Get Bookmarks",
       description:
         "Your saved bookmarks, newest first. Requires `x-api-mcp login` with the " +
         "`bookmark.read` scope — an app-only Bearer token cannot reach bookmarks at all.",
