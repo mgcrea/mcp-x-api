@@ -1,6 +1,5 @@
-import { DEFAULT_BASE_URL } from "../config.js";
-import type { AuthContext, Logger, TokenProvider } from "./auth.js";
-import { type XApiError, XApiRequestError } from "./errors.js";
+import type { AuthContext, Logger, TokenProvider } from "#/client/auth";
+import { type XApiError, XApiRequestError } from "#/client/errors";
 import {
   buildQuery,
   endpointKey,
@@ -9,11 +8,12 @@ import {
   withRetry,
   type Query,
   type RateLimitSnapshot,
-} from "./http.js";
+} from "#/client/http";
+import { DEFAULT_BASE_URL } from "#/config";
 
 // Re-exported so the many call sites that import these from `./x.js` keep
 // working; the definitions moved to `./http.js` when the Ads client needed them.
-export type { Query, QueryValue, RateLimitSnapshot } from "./http.js";
+export type { Query, QueryValue, RateLimitSnapshot } from "#/client/http";
 
 export type RequestOptions = {
   query?: Query;

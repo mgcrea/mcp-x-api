@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import type { AdsApiClient } from "../../client/ads.js";
-import { wrap } from "../util.js";
-import { accountIdArg, adsCostNote, adsCountArg, shapeAds } from "./util.js";
+import type { AdsApiClient } from "#/client/ads";
+import { accountIdArg, adsCostNote, adsCountArg, shapeAds } from "#/tools/ads/util";
+import { wrap } from "#/tools/util";
 
 export const registerAdsAudienceTools = (
   server: McpServer,

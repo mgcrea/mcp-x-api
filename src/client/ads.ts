@@ -1,8 +1,7 @@
 import { gunzipSync } from "node:zlib";
 
-import { DEFAULT_ADS_BASE_URL } from "../config.js";
-import type { Logger, TokenProvider } from "./auth.js";
-import { PreconditionError, type XApiError, XApiRequestError } from "./errors.js";
+import type { Logger, TokenProvider } from "#/client/auth";
+import { PreconditionError, type XApiError, XApiRequestError } from "#/client/errors";
 import {
   buildQuery,
   endpointKey,
@@ -11,7 +10,8 @@ import {
   withRetry,
   type Query,
   type RateLimitSnapshot,
-} from "./http.js";
+} from "#/client/http";
+import { DEFAULT_ADS_BASE_URL } from "#/config";
 
 export type AdsApiClientOptions = {
   baseUrl?: string;

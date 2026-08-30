@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { createDayCache, utcDay } from "../src/client/cache.js";
-import { createLedger } from "../src/client/cost.js";
-import { DEFAULT_PRICING } from "../src/config.js";
+import { createDayCache, utcDay } from "#/client/cache";
+import { createLedger } from "#/client/cost";
+import { DEFAULT_PRICING } from "#/config";
 
 /** A clock we can walk forward, so UTC-midnight behaviour is testable. */
 const clock = (start: string) => {

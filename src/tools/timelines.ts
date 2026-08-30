@@ -1,10 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { UserContextRequiredError } from "../client/errors.js";
-import { isRecord, shapePostsResponse } from "../client/shape.js";
-import type { XApiClient } from "../client/x.js";
-import type { ToolContext } from "./index.js";
+import { UserContextRequiredError } from "#/client/errors";
+import { isRecord, shapePostsResponse } from "#/client/shape";
+import type { XApiClient } from "#/client/x";
+import type { ToolContext } from "#/tools/index";
 import {
   compact,
   maxResultsArg,
@@ -12,7 +12,7 @@ import {
   POST_QUERY,
   recordResultCost,
   wrap,
-} from "./util.js";
+} from "#/tools/util";
 
 /**
  * Both endpoints here are self-only: X permits reading *your* home timeline and

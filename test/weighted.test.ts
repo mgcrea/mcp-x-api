@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { assembleComposerText, buildIntentUrl, validateIntent } from "../src/compose/intent.js";
-import { TCO_URL_LENGTH, weightedLength } from "../src/compose/weighted.js";
+import { assembleComposerText, buildIntentUrl, validateIntent } from "#/compose/intent";
+import { TCO_URL_LENGTH, weightedLength } from "#/compose/weighted";
 
 const w = (text: string) => weightedLength(text).weighted;
 

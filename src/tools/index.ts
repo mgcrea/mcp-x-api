@@ -1,20 +1,20 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import type { AdsApiClient } from "../client/ads.js";
-import type { TokenProvider } from "../client/auth.js";
-import type { DayCache } from "../client/cache.js";
-import type { Ledger } from "../client/cost.js";
-import type { TokenStore } from "../client/tokens.js";
-import type { XApiClient } from "../client/x.js";
-import type { Pricing } from "../config.js";
-import { registerAdsTools } from "./ads/index.js";
-import { registerAuthTools } from "./auth.js";
-import { registerComposeTools } from "./compose.js";
-import { registerPostTools } from "./posts.js";
-import { registerQueryBuilderTool, registerSearchTools } from "./search.js";
-import { registerTimelineTools } from "./timelines.js";
-import { registerUsageTools } from "./usage.js";
-import { registerUserTools } from "./users.js";
+import type { AdsApiClient } from "#/client/ads";
+import type { TokenProvider } from "#/client/auth";
+import type { DayCache } from "#/client/cache";
+import type { Ledger } from "#/client/cost";
+import type { TokenStore } from "#/client/tokens";
+import type { XApiClient } from "#/client/x";
+import type { Pricing } from "#/config";
+import { registerAdsTools } from "#/tools/ads/index";
+import { registerAuthTools } from "#/tools/auth";
+import { registerComposeTools } from "#/tools/compose";
+import { registerPostTools } from "#/tools/posts";
+import { registerQueryBuilderTool, registerSearchTools } from "#/tools/search";
+import { registerTimelineTools } from "#/tools/timelines";
+import { registerUsageTools } from "#/tools/usage";
+import { registerUserTools } from "#/tools/users";
 
 /**
  * Everything the ads tools need, as one object rather than four independently

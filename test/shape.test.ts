@@ -6,7 +6,7 @@ import {
   shapePostResponse,
   shapePostsResponse,
   shapeUsersResponse,
-} from "../src/client/shape.js";
+} from "#/client/shape";
 
 /** A realistic search response: quote, media, expanded URL, CJK, full metrics. */
 const SEARCH_RESPONSE = {

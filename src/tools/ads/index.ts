@@ -1,13 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import type { AdsApiClient } from "../../client/ads.js";
-import type { ToolContext } from "../index.js";
-import { registerAdsAccountTools } from "./accounts.js";
-import { registerAdsAnalyticsTools } from "./analytics.js";
-import { registerAdsAudienceTools } from "./audiences.js";
-import { registerAdsCampaignTools } from "./campaigns.js";
-import { registerAdsTargetingTools } from "./targeting.js";
-import { createAccountResolver } from "./util.js";
+import type { AdsApiClient } from "#/client/ads";
+import { registerAdsAccountTools } from "#/tools/ads/accounts";
+import { registerAdsAnalyticsTools } from "#/tools/ads/analytics";
+import { registerAdsAudienceTools } from "#/tools/ads/audiences";
+import { registerAdsCampaignTools } from "#/tools/ads/campaigns";
+import { registerAdsTargetingTools } from "#/tools/ads/targeting";
+import { createAccountResolver } from "#/tools/ads/util";
+import type { ToolContext } from "#/tools/index";
 
 /**
  * Register the X Ads API tools.

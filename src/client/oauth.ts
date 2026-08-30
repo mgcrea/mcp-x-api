@@ -1,12 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer as createHttpServer } from "node:http";
 
-import type { Config } from "../config.js";
-import { effectiveScopes } from "../config.js";
-import type { Logger } from "./auth.js";
-import { PreconditionError } from "./errors.js";
-import type { StoredTokens, TokenStore } from "./tokens.js";
-import { TOKEN_FILE_VERSION } from "./tokens.js";
+import type { Logger } from "#/client/auth";
+import { PreconditionError } from "#/client/errors";
+import type { StoredTokens, TokenStore } from "#/client/tokens";
+import { TOKEN_FILE_VERSION } from "#/client/tokens";
+import type { Config } from "#/config";
+import { effectiveScopes } from "#/config";
 
 export const AUTHORIZE_URL = "https://x.com/i/oauth2/authorize";
 const TOKEN_PATH = "/2/oauth2/token";

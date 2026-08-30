@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import type { XApiClient } from "../client/x.js";
-import type { ToolContext } from "./index.js";
-import { wrap } from "./util.js";
+import type { XApiClient } from "#/client/x";
+import type { ToolContext } from "#/tools/index";
+import { wrap } from "#/tools/util";
 
 export const registerUsageTools = (
   server: McpServer,

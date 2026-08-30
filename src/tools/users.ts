@@ -1,10 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { PreconditionError } from "../client/errors.js";
-import { shapePostsResponse, shapeUsersResponse, type ShapedUser } from "../client/shape.js";
-import type { XApiClient } from "../client/x.js";
-import type { ToolContext } from "./index.js";
+import { PreconditionError } from "#/client/errors";
+import { shapePostsResponse, shapeUsersResponse, type ShapedUser } from "#/client/shape";
+import type { XApiClient } from "#/client/x";
+import type { ToolContext } from "#/tools/index";
 import {
   cachedByIds,
   compact,
@@ -17,7 +17,7 @@ import {
   userIdArg,
   usernameArg,
   wrap,
-} from "./util.js";
+} from "#/tools/util";
 
 /**
  * Resolve a handle to the numeric id X's timeline endpoints require. Cached and

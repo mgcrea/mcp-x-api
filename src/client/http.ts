@@ -1,4 +1,4 @@
-import type { Logger } from "./auth.js";
+import type { Logger } from "#/client/auth";
 
 export type QueryValue = string | number | boolean | string[] | undefined;
 export type Query = Record<string, QueryValue>;

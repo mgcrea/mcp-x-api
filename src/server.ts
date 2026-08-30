@@ -1,20 +1,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import { BUILD_INFO } from "./build-info.js";
-import { AdsApiClient } from "./client/ads.js";
+import { BUILD_INFO } from "#/build-info";
+import { AdsApiClient } from "#/client/ads";
 import {
   bearerTokenProvider,
   compositeTokenProvider,
   userTokenProvider,
   type Logger,
   type TokenProvider,
-} from "./client/auth.js";
-import { createDayCache, type DayCache } from "./client/cache.js";
-import { createLedger, type Ledger } from "./client/cost.js";
-import { createOAuthClient, startLoginFlow } from "./client/oauth.js";
-import { createTokenStore, type TokenStore } from "./client/tokens.js";
-import { XApiClient } from "./client/x.js";
-import { openInBrowser } from "./compose/open.js";
+} from "#/client/auth";
+import { createDayCache, type DayCache } from "#/client/cache";
+import { createLedger, type Ledger } from "#/client/cost";
+import { createOAuthClient, startLoginFlow } from "#/client/oauth";
+import { createTokenStore, type TokenStore } from "#/client/tokens";
+import { XApiClient } from "#/client/x";
+import { openInBrowser } from "#/compose/open";
 import {
   adsSetupInstructions,
   effectiveScopes,
@@ -22,8 +22,8 @@ import {
   hasApiCredentials,
   setupInstructions,
   type Config,
-} from "./config.js";
-import { registerTools } from "./tools/index.js";
+} from "#/config";
+import { registerTools } from "#/tools/index";
 
 export const SERVER_NAME = BUILD_INFO.name;
 export const SERVER_VERSION = BUILD_INFO.version;

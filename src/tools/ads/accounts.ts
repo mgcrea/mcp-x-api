@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { isRecord } from "../../client/ads-shape.js";
-import type { AdsApiClient } from "../../client/ads.js";
-import type { AdsContext } from "../index.js";
-import { wrap } from "../util.js";
-import { accountIdArg, adsCostNote, adsCountArg, shapeAds } from "./util.js";
+import type { AdsApiClient } from "#/client/ads";
+import { isRecord } from "#/client/ads-shape";
+import { accountIdArg, adsCostNote, adsCountArg, shapeAds } from "#/tools/ads/util";
+import type { AdsContext } from "#/tools/index";
+import { wrap } from "#/tools/util";
 
 export const registerAdsAccountTools = (
   server: McpServer,

@@ -2,9 +2,9 @@ import { gzipSync } from "node:zlib";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { AdsApiClient } from "../src/client/ads.js";
-import { staticTokenProvider } from "../src/client/auth.js";
-import { PreconditionError, XApiRequestError } from "../src/client/errors.js";
+import { AdsApiClient } from "#/client/ads";
+import { staticTokenProvider } from "#/client/auth";
+import { PreconditionError, XApiRequestError } from "#/client/errors";
 
 const json = (body: unknown, init: { status?: number; headers?: Record<string, string> } = {}) =>
   new Response(JSON.stringify(body), {

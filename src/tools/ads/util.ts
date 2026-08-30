@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { adsData, isRecord, shapeMoney } from "../../client/ads-shape.js";
-import type { AdsApiClient } from "../../client/ads.js";
-import { AdsAccessError, PreconditionError } from "../../client/errors.js";
-import type { AdsContext } from "../index.js";
+import type { AdsApiClient } from "#/client/ads";
+import { adsData, isRecord, shapeMoney } from "#/client/ads-shape";
+import { AdsAccessError, PreconditionError } from "#/client/errors";
+import type { AdsContext } from "#/tools/index";
 
 /**
  * Ads calls are not metered by X's pay-per-use rates, so they carry a fixed

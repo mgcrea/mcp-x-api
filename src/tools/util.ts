@@ -1,14 +1,14 @@
 import { z } from "zod";
 
-import type { DayCache, ResourceKind } from "../client/cache.js";
-import type { CostNote, Ledger } from "../client/cost.js";
+import type { DayCache, ResourceKind } from "#/client/cache";
+import type { CostNote, Ledger } from "#/client/cost";
 import {
   BudgetExceededError,
   PreconditionError,
   UserContextRequiredError,
   WritesDisabledError,
   XApiRequestError,
-} from "../client/errors.js";
+} from "#/client/errors";
 
 export type ToolResult = {
   content: { type: "text"; text: string }[];

@@ -1,10 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { isRecord, toMicro } from "../../client/ads-shape.js";
-import type { AdsApiClient } from "../../client/ads.js";
-import type { AdsContext } from "../index.js";
-import { compact, wrap } from "../util.js";
+import type { AdsApiClient } from "#/client/ads";
+import { isRecord, toMicro } from "#/client/ads-shape";
 import {
   accountIdArg,
   activateArg,
@@ -15,7 +13,9 @@ import {
   budgetArg,
   entityIdArg,
   shapeAds,
-} from "./util.js";
+} from "#/tools/ads/util";
+import type { AdsContext } from "#/tools/index";
+import { compact, wrap } from "#/tools/util";
 
 /** Line-item enums, verbatim from the v12 reference. */
 const OBJECTIVES = [

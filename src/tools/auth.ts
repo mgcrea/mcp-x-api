@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { fileMode } from "../client/tokens.js";
-import type { ToolContext } from "./index.js";
-import { wrap } from "./util.js";
+import { fileMode } from "#/client/tokens";
+import type { ToolContext } from "#/tools/index";
+import { wrap } from "#/tools/util";
 
 export const registerAuthTools = (server: McpServer, ctx: ToolContext): void => {
   server.registerTool(

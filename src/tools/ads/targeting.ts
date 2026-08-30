@@ -1,9 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import type { AdsApiClient } from "../../client/ads.js";
-import type { AdsContext } from "../index.js";
-import { compact, wrap } from "../util.js";
+import type { AdsApiClient } from "#/client/ads";
 import {
   accountIdArg,
   adsConfirmArg,
@@ -11,7 +9,9 @@ import {
   adsCountArg,
   entityIdArg,
   shapeAds,
-} from "./util.js";
+} from "#/tools/ads/util";
+import type { AdsContext } from "#/tools/index";
+import { compact, wrap } from "#/tools/util";
 
 /**
  * The twelve targeting-option lookup endpoints that exist under

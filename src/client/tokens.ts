@@ -2,7 +2,7 @@ import { mkdirSync, renameSync, statSync, unlinkSync, writeFileSync } from "node
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { warnIfGroupReadable } from "../config.js";
+import { warnIfGroupReadable } from "#/config";
 
 /**
  * Bumped when the shape changes incompatibly. A file from a future or unknown

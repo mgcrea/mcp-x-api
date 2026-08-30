@@ -5,8 +5,8 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { userTokenProvider } from "../src/client/auth.js";
-import { UserContextRequiredError } from "../src/client/errors.js";
+import { userTokenProvider } from "#/client/auth";
+import { UserContextRequiredError } from "#/client/errors";
 import {
   buildAuthorizeUrl,
   createOAuthClient,
@@ -14,9 +14,9 @@ import {
   startLoginFlow,
   toStoredTokens,
   type OAuthClient,
-} from "../src/client/oauth.js";
-import { createTokenStore, TOKEN_FILE_VERSION, tokensAreStale } from "../src/client/tokens.js";
-import { loadConfig } from "../src/config.js";
+} from "#/client/oauth";
+import { createTokenStore, TOKEN_FILE_VERSION, tokensAreStale } from "#/client/tokens";
+import { loadConfig } from "#/config";
 
 let dir: string;
 let tokenPath: string;

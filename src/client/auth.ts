@@ -1,8 +1,8 @@
-import { UserContextRequiredError } from "./errors.js";
-import type { OAuthClient } from "./oauth.js";
-import { toStoredTokens } from "./oauth.js";
-import type { StoredTokens, TokenStore } from "./tokens.js";
-import { tokensAreStale } from "./tokens.js";
+import { UserContextRequiredError } from "#/client/errors";
+import type { OAuthClient } from "#/client/oauth";
+import { toStoredTokens } from "#/client/oauth";
+import type { StoredTokens, TokenStore } from "#/client/tokens";
+import { tokensAreStale } from "#/client/tokens";
 
 export type Logger = {
   debug?: (message: string) => void;

@@ -1,4 +1,4 @@
-import { MAX_WEIGHTED_LENGTH, weightedLength } from "./weighted.js";
+import { MAX_WEIGHTED_LENGTH, weightedLength } from "#/compose/weighted";
 
 /**
  * X's web intent: a documented, credential-free URL that opens the composer

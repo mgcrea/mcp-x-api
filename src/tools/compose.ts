@@ -1,12 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { isRecord } from "../client/shape.js";
-import type { XApiClient } from "../client/x.js";
-import { validateIntent } from "../compose/intent.js";
-import { openInBrowser } from "../compose/open.js";
-import type { ToolContext } from "./index.js";
-import { compact, confirmArg, postIdArg, wrap } from "./util.js";
+import { isRecord } from "#/client/shape";
+import type { XApiClient } from "#/client/x";
+import { validateIntent } from "#/compose/intent";
+import { openInBrowser } from "#/compose/open";
+import type { ToolContext } from "#/tools/index";
+import { compact, confirmArg, postIdArg, wrap } from "#/tools/util";
 
 const textArg = z
   .string()

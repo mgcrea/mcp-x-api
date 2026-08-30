@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { isRecord } from "../../client/ads-shape.js";
-import type { AdsApiClient } from "../../client/ads.js";
-import { PreconditionError } from "../../client/errors.js";
-import { compact, wrap } from "../util.js";
-import { accountIdArg, adsCostNote, adsTimeArg, entityIdArg } from "./util.js";
+import type { AdsApiClient } from "#/client/ads";
+import { isRecord } from "#/client/ads-shape";
+import { PreconditionError } from "#/client/errors";
+import { accountIdArg, adsCostNote, adsTimeArg, entityIdArg } from "#/tools/ads/util";
+import { compact, wrap } from "#/tools/util";
 
 const ENTITIES = [
   "ACCOUNT",

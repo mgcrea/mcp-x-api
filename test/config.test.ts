@@ -16,7 +16,7 @@ import {
   hasAdsAccess,
   DEFAULT_ADS_BASE_URL,
   SANDBOX_ADS_BASE_URL,
-} from "../src/config.js";
+} from "#/config";
 
 let dir: string;
 /** A path that does not exist, so "no config file" is the default in most tests. */

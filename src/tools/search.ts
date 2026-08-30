@@ -1,9 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { isRecord, shapePostsResponse } from "../client/shape.js";
-import type { XApiClient } from "../client/x.js";
-import type { ToolContext } from "./index.js";
+import { isRecord, shapePostsResponse } from "#/client/shape";
+import type { XApiClient } from "#/client/x";
+import type { ToolContext } from "#/tools/index";
 import {
   assertWithinBudget,
   compact,
@@ -13,7 +13,7 @@ import {
   recordResultCost,
   stripAt,
   wrap,
-} from "./util.js";
+} from "#/tools/util";
 
 const queryArg = z
   .string()

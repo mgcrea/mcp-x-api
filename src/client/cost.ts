@@ -1,5 +1,5 @@
-import type { Pricing } from "../config.js";
-import { utcDay, type CacheStats, type ResourceKind } from "./cache.js";
+import { utcDay, type CacheStats, type ResourceKind } from "#/client/cache";
+import type { Pricing } from "#/config";
 
 /**
  * Which resource ids we have already been billed for today.

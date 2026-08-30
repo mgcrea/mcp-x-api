@@ -1,12 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  bearerTokenProvider,
-  staticTokenProvider,
-  type TokenProvider,
-} from "../src/client/auth.js";
-import { UserContextRequiredError, XApiRequestError } from "../src/client/errors.js";
-import { XApiClient } from "../src/client/x.js";
+import { bearerTokenProvider, staticTokenProvider, type TokenProvider } from "#/client/auth";
+import { UserContextRequiredError, XApiRequestError } from "#/client/errors";
+import { XApiClient } from "#/client/x";
 
 const json = (body: unknown, init: { status?: number; headers?: Record<string, string> } = {}) =>
   new Response(JSON.stringify(body), {

@@ -2,11 +2,11 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { ZodError } from "zod";
 
-import { BUILD_INFO } from "./build-info.js";
-import { startLoginFlow } from "./client/oauth.js";
-import { openInBrowser } from "./compose/open.js";
-import { hasAdsAccess, hasApiCredentials, loadConfig, setupInstructions } from "./config.js";
-import { createServer } from "./server.js";
+import { BUILD_INFO } from "#/build-info";
+import { startLoginFlow } from "#/client/oauth";
+import { openInBrowser } from "#/compose/open";
+import { hasAdsAccess, hasApiCredentials, loadConfig, setupInstructions } from "#/config";
+import { createServer } from "#/server";
 
 // Everything goes to stderr: stdout is the MCP protocol channel, and a stray
 // log line there corrupts the stream.
