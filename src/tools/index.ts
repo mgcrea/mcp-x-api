@@ -38,7 +38,7 @@ export type AdsContext = {
  * widened on the first commit anyway.
  */
 export type ToolContext = {
-  /** Register the paid write tools too. Off by default — see X_API_ALLOW_WRITES. */
+  /** Register the paid write tools too. Off by default — see X_ALLOW_WRITES. */
   allowWrites: boolean;
   /** "intent" (free web-intent URLs, the default) or "api" (paid POST /2/tweets). */
   writeBackend: "intent" | "api";

@@ -12,10 +12,10 @@ import { createServer } from "#/server";
 // log line there corrupts the stream.
 const stderrLogger = {
   debug: (...args: unknown[]) => {
-    if (process.env.X_API_DEBUG) console.error("[x-api-mcp]", ...args);
+    if (process.env.X_DEBUG) console.error("[x-mcp]", ...args);
   },
-  warn: (...args: unknown[]) => console.error("[x-api-mcp]", ...args),
-  error: (...args: unknown[]) => console.error("[x-api-mcp]", ...args),
+  warn: (...args: unknown[]) => console.error("[x-mcp]", ...args),
+  error: (...args: unknown[]) => console.error("[x-mcp]", ...args),
 };
 
 /**
@@ -71,7 +71,7 @@ const runSubcommand = async (command: string): Promise<boolean> => {
 
   if (!config.clientId) {
     console.error(
-      "Cannot log in: X_API_CLIENT_ID is not set. Create an OAuth 2.0 app in the X developer " +
+      "Cannot log in: X_CLIENT_ID is not set. Create an OAuth 2.0 app in the X developer " +
         `portal, enable PKCE, and register this exact callback URL: ${config.redirectUri}`,
     );
     process.exit(1);
@@ -104,7 +104,7 @@ const main = async (): Promise<void> => {
   await server.connect(transport);
 
   stderrLogger.warn(
-    `x-api-mcp connected (auth=${describeAuth(config)}, ` +
+    `x-mcp connected (auth=${describeAuth(config)}, ` +
       `writes=${config.allowWrites ? `ENABLED via ${config.writeBackend}` : "disabled"}, ` +
       `compose=intent (free), ` +
       `full-archive=${config.enableFullArchive ? "on" : "off"}, ` +
@@ -147,7 +147,7 @@ const describeFatal = (err: unknown): string => {
 };
 
 main().catch((err: unknown) => {
-  console.error(`[x-api-mcp] ${describeFatal(err)}`);
-  if (process.env.X_API_DEBUG && err instanceof Error) console.error(err.stack);
+  console.error(`[x-mcp] ${describeFatal(err)}`);
+  if (process.env.X_DEBUG && err instanceof Error) console.error(err.stack);
   process.exit(1);
 });

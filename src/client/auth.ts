@@ -133,7 +133,7 @@ export const userTokenProvider = (opts: {
         lastError = err;
         if (index === 0 && candidates.length > 1) {
           opts.logger?.warn?.(
-            "[x-api] refresh failed on the current token; retrying with the previous generation",
+            "[x] refresh failed on the current token; retrying with the previous generation",
           );
         }
       }
@@ -217,8 +217,7 @@ export const compositeTokenProvider = (parts: {
     if (parts.app) return parts.app.getToken("app");
     if (parts.user) return parts.user.getToken("user");
     throw new Error(
-      "No credentials configured. Set X_API_BEARER_TOKEN, or X_API_CLIENT_ID and run " +
-        "`x-api-mcp login`.",
+      "No credentials configured. Set X_BEARER_TOKEN, or X_CLIENT_ID and run " + "`x-mcp login`.",
     );
   },
   invalidate: (context) => {

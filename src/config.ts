@@ -100,14 +100,14 @@ const ConfigSchema = z
     // problem never reaches anyone. Worse, it makes the free tools
     // (x_compose_post, x_validate_post, x_build_search_query) unreachable even
     // though they need no credentials at all, and leaves no way to discover
-    // that OAuth needs X_API_CLIENT_ID. The server starts; `x_auth_status`
+    // that OAuth needs X_CLIENT_ID. The server starts; `x_auth_status`
     // and the startup banner report what is missing.
     if (cfg.writeBackend === "api" && !cfg.clientId) {
       ctx.addIssue({
         code: "custom",
         message:
-          "X_API_WRITE_BACKEND=api needs a user context: set X_API_CLIENT_ID and run " +
-          "`x-api-mcp login`. The default backend (intent) needs no credentials at all — it " +
+          "X_WRITE_BACKEND=api needs a user context: set X_CLIENT_ID and run " +
+          "`x-mcp login`. The default backend (intent) needs no credentials at all — it " +
           "returns an x.com/intent/tweet URL you click, which costs nothing.",
       });
     }
@@ -119,8 +119,8 @@ const ConfigSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          "X_ADS_ENABLED=1 needs an OAuth 2.0 user context: set X_API_CLIENT_ID and run " +
-          "`x-api-mcp login`. The Ads API does not accept an app-only Bearer token.",
+          "X_ADS_ENABLED=1 needs an OAuth 2.0 user context: set X_CLIENT_ID and run " +
+          "`x-mcp login`. The Ads API does not accept an app-only Bearer token.",
       });
     }
 
@@ -218,10 +218,10 @@ export const expandTilde = (path: string): string =>
  * the XDG location, then the conventional `~/.config`.
  */
 export const resolveConfigPath = (env: NodeJS.ProcessEnv = process.env): string => {
-  const explicit = trimmed(env.X_API_CONFIG);
+  const explicit = trimmed(env.X_CONFIG);
   if (explicit) return expandTilde(explicit);
   const base = trimmed(env.XDG_CONFIG_HOME) ?? join(homedir(), ".config");
-  return join(expandTilde(base), "x-api", "config.json");
+  return join(expandTilde(base), "x", "config.json");
 };
 
 /** The OAuth token file sits beside the config file unless told otherwise. */
@@ -237,7 +237,7 @@ export const warnIfGroupReadable = (path: string): void => {
   if (process.platform === "win32") return; // mode bits mean nothing here
   try {
     if (statSync(path).mode & 0o077) {
-      process.stderr.write(`[x-api] ${path} is readable by other users. Run: chmod 600 ${path}\n`);
+      process.stderr.write(`[x] ${path} is readable by other users. Run: chmod 600 ${path}\n`);
     }
   } catch {
     // Not worth failing startup over; the read below reports anything that matters.
@@ -281,7 +281,7 @@ const readConfigFile = (path: string): FileConfig => {
 /**
  * Environment first, config file second, **per field** — not whole-source.
  * Docker and CI inject the environment and must keep working untouched, while a
- * one-off `X_API_ALLOW_WRITES=0` still has to override a file that says `true`.
+ * one-off `X_ALLOW_WRITES=0` still has to override a file that says `true`.
  * Merging field by field is the only rule that gives both.
  */
 export const loadConfig = (
@@ -289,24 +289,24 @@ export const loadConfig = (
   configPath: string = resolveConfigPath(env),
 ): Config => {
   const file = readConfigFile(configPath);
-  const tokenFile = trimmed(env.X_API_TOKEN_FILE) ?? file.tokenFile ?? resolveTokenPath(env);
+  const tokenFile = trimmed(env.X_TOKEN_FILE) ?? file.tokenFile ?? resolveTokenPath(env);
   return ConfigSchema.parse({
-    bearerToken: trimmed(env.X_API_BEARER_TOKEN) ?? file.bearerToken,
-    clientId: trimmed(env.X_API_CLIENT_ID) ?? file.clientId,
-    clientSecret: trimmed(env.X_API_CLIENT_SECRET) ?? file.clientSecret,
-    redirectUri: trimmed(env.X_API_REDIRECT_URI) ?? file.redirectUri,
-    scopes: parseList(env.X_API_SCOPES) ?? file.scopes,
+    bearerToken: trimmed(env.X_BEARER_TOKEN) ?? file.bearerToken,
+    clientId: trimmed(env.X_CLIENT_ID) ?? file.clientId,
+    clientSecret: trimmed(env.X_CLIENT_SECRET) ?? file.clientSecret,
+    redirectUri: trimmed(env.X_REDIRECT_URI) ?? file.redirectUri,
+    scopes: parseList(env.X_SCOPES) ?? file.scopes,
     tokenFile: expandTilde(tokenFile),
-    allowWrites: parseBool(env.X_API_ALLOW_WRITES) ?? file.allowWrites,
-    writeBackend: trimmed(env.X_API_WRITE_BACKEND) ?? file.writeBackend,
-    autoOpenBrowser: parseBool(env.X_API_AUTO_OPEN_BROWSER) ?? file.autoOpenBrowser,
-    enableFullArchive: parseBool(env.X_API_ENABLE_FULL_ARCHIVE) ?? file.enableFullArchive,
-    defaultMaxResults: parseIntOpt(env.X_API_DEFAULT_MAX_RESULTS) ?? file.defaultMaxResults,
-    monthlyBudgetUsd: parseFloatOpt(env.X_API_MONTHLY_BUDGET_USD) ?? file.monthlyBudgetUsd,
-    cacheEnabled: parseBool(env.X_API_CACHE_ENABLED) ?? file.cacheEnabled,
-    cacheMaxEntries: parseIntOpt(env.X_API_CACHE_MAX_ENTRIES) ?? file.cacheMaxEntries,
-    maxRetries: parseIntOpt(env.X_API_MAX_RETRIES) ?? file.maxRetries,
-    baseUrl: trimmed(env.X_API_BASE_URL) ?? file.baseUrl,
+    allowWrites: parseBool(env.X_ALLOW_WRITES) ?? file.allowWrites,
+    writeBackend: trimmed(env.X_WRITE_BACKEND) ?? file.writeBackend,
+    autoOpenBrowser: parseBool(env.X_AUTO_OPEN_BROWSER) ?? file.autoOpenBrowser,
+    enableFullArchive: parseBool(env.X_ENABLE_FULL_ARCHIVE) ?? file.enableFullArchive,
+    defaultMaxResults: parseIntOpt(env.X_DEFAULT_MAX_RESULTS) ?? file.defaultMaxResults,
+    monthlyBudgetUsd: parseFloatOpt(env.X_MONTHLY_BUDGET_USD) ?? file.monthlyBudgetUsd,
+    cacheEnabled: parseBool(env.X_CACHE_ENABLED) ?? file.cacheEnabled,
+    cacheMaxEntries: parseIntOpt(env.X_CACHE_MAX_ENTRIES) ?? file.cacheMaxEntries,
+    maxRetries: parseIntOpt(env.X_MAX_RETRIES) ?? file.maxRetries,
+    baseUrl: trimmed(env.X_BASE_URL) ?? file.baseUrl,
     pricing: file.pricing,
     adsEnabled: parseBool(env.X_ADS_ENABLED) ?? file.adsEnabled,
     adsAllowWrites: parseBool(env.X_ADS_ALLOW_WRITES) ?? file.adsAllowWrites,
@@ -342,13 +342,13 @@ export const setupInstructions = (config: Config): string[] => [
   // legacy, and sending people there is the fastest way to lose them.
   "Create an app at https://console.x.com (this replaced the old developer.x.com portal). Both " +
     "credentials below are on the app's Keys and Tokens screen.",
-  "To enable reading and search, set X_API_BEARER_TOKEN to the app's Bearer Token. That alone " +
+  "To enable reading and search, set X_BEARER_TOKEN to the app's Bearer Token. That alone " +
     "covers post lookup, search, profiles and timelines — OAuth is not needed for any of it.",
-  "To enable bookmarks, your home timeline and API writes, also set X_API_CLIENT_ID. When " +
+  "To enable bookmarks, your home timeline and API writes, also set X_CLIENT_ID. When " +
     "creating the app choose Type of App = Native App: that makes it a public PKCE client with " +
     `no client secret, which is what this server expects. Register the callback URL ` +
     `${config.redirectUri} byte for byte (X's docs say to use 127.0.0.1 rather than localhost), ` +
-    "then run `x-api-mcp login` or call x_auth_login.",
+    "then run `x-mcp login` or call x_auth_login.",
   "Enroll the app in the Pay-per-use package and the Production environment. An app left in the " +
     "legacy Free/Development state logs in successfully and then fails every call with 403 " +
     "client-not-enrolled.",
@@ -371,7 +371,7 @@ export const adsSetupInstructions = (config: Config): string[] => [
     "campaigns, creatives, audiences and analytics.",
   // The step everyone misses. An old token authenticates fine and then fails
   // every ads call, which reads as a scope problem and is not one.
-  "After approval is granted, run `x-api-mcp login` again. A token minted before approval " +
+  "After approval is granted, run `x-mcp login` again. A token minted before approval " +
     "does not carry the entitlement, and re-using it fails every call.",
   `Ads calls are billed separately from X's pay-per-use reads, so they do not appear in ` +
     `x_usage_report — but the campaigns they manage spend your advertising budget.`,

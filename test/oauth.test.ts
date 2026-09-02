@@ -23,7 +23,7 @@ let tokenPath: string;
 const ABSENT = "/nonexistent/config.json";
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "x-api-oauth-"));
+  dir = mkdtempSync(join(tmpdir(), "x-oauth-"));
   tokenPath = join(dir, "tokens.json");
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
@@ -127,7 +127,7 @@ describe("tokensAreStale", () => {
     const res = tokensAreStale(storedTokens() as never, "other-cid", []);
     expect(res).toEqual({
       stale: true,
-      reason: expect.stringMatching(/different X_API_CLIENT_ID/),
+      reason: expect.stringMatching(/different X_CLIENT_ID/),
     });
   });
 
@@ -230,7 +230,7 @@ describe("userTokenProvider refresh rotation", () => {
       storedTokens({ expiresAt: 0 }),
     );
     await expect(provider.getToken("user")).rejects.toThrow(UserContextRequiredError);
-    await expect(provider.getToken("user")).rejects.toThrow(/x-api-mcp login/);
+    await expect(provider.getToken("user")).rejects.toThrow(/x-mcp login/);
   });
 
   it("issues exactly one refresh for concurrent callers", async () => {
@@ -283,7 +283,7 @@ describe("userTokenProvider refresh rotation", () => {
 });
 
 describe("createOAuthClient", () => {
-  const config = loadConfig({ X_API_CLIENT_ID: "cid", X_API_BASE_URL: "https://x.test" }, ABSENT);
+  const config = loadConfig({ X_CLIENT_ID: "cid", X_BASE_URL: "https://x.test" }, ABSENT);
 
   it("posts the code exchange form-encoded with the verifier", async () => {
     const f = vi.fn(async () => new Response(JSON.stringify({ access_token: "a" })));
@@ -307,7 +307,7 @@ describe("createOAuthClient", () => {
   it("adds Basic auth only for a confidential client", async () => {
     const f = vi.fn(async () => new Response(JSON.stringify({ access_token: "a" })));
     const confidential = loadConfig(
-      { X_API_CLIENT_ID: "cid", X_API_CLIENT_SECRET: "sec", X_API_BASE_URL: "https://x.test" },
+      { X_CLIENT_ID: "cid", X_CLIENT_SECRET: "sec", X_BASE_URL: "https://x.test" },
       ABSENT,
     );
     await createOAuthClient(confidential, f as unknown as typeof fetch).refresh("r");
@@ -347,18 +347,18 @@ describe("toStoredTokens", () => {
 
 describe("startLoginFlow", () => {
   it("refuses without a client id, naming the callback URL to register", async () => {
-    const config = loadConfig({ X_API_BEARER_TOKEN: "t" }, ABSENT);
+    const config = loadConfig({ X_BEARER_TOKEN: "t" }, ABSENT);
     await expect(startLoginFlow({ config, store: createTokenStore(tokenPath) })).rejects.toThrow(
-      /X_API_CLIENT_ID.*127\.0\.0\.1:8723\/callback/s,
+      /X_CLIENT_ID.*127\.0\.0\.1:8723\/callback/s,
     );
   });
 
   it("completes end to end against a real loopback callback", async () => {
     const config = loadConfig(
       {
-        X_API_CLIENT_ID: "cid",
-        X_API_BASE_URL: "https://x.test",
-        X_API_REDIRECT_URI: "http://127.0.0.1:8799/callback",
+        X_CLIENT_ID: "cid",
+        X_BASE_URL: "https://x.test",
+        X_REDIRECT_URI: "http://127.0.0.1:8799/callback",
       },
       ABSENT,
     );
@@ -403,9 +403,9 @@ describe("startLoginFlow", () => {
   it("rejects a callback whose state does not match the login that started", async () => {
     const config = loadConfig(
       {
-        X_API_CLIENT_ID: "cid",
-        X_API_BASE_URL: "https://x.test",
-        X_API_REDIRECT_URI: "http://127.0.0.1:8798/callback",
+        X_CLIENT_ID: "cid",
+        X_BASE_URL: "https://x.test",
+        X_REDIRECT_URI: "http://127.0.0.1:8798/callback",
       },
       ABSENT,
     );

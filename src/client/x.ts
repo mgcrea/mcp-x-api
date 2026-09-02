@@ -52,7 +52,7 @@ export class XApiClient {
     this.maxRetries = opts.maxRetries ?? 3;
     this.fetchImpl = opts.fetch ?? fetch;
     this.logger = opts.logger;
-    this.userAgent = opts.userAgent ?? "mcp-x-api-js";
+    this.userAgent = opts.userAgent ?? "mcp-x-js";
   }
 
   /** Everything the last response said about each endpoint's remaining budget. */
@@ -206,8 +206,8 @@ export class XApiClient {
 
     if (res.status === 401) {
       return (
-        `${base} — the token was rejected. Check X_API_BEARER_TOKEN, or re-run ` +
-        `\`x-api-mcp login\` if this call needed a user context` +
+        `${base} — the token was rejected. Check X_BEARER_TOKEN, or re-run ` +
+        `\`x-mcp login\` if this call needed a user context` +
         (detail ? ` (${detail})` : "")
       );
     }

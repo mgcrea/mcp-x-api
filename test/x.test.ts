@@ -62,7 +62,7 @@ describe("auth context", () => {
     await expect(client.get("/2/users/1/bookmarks", {}, "user")).rejects.toThrow(
       UserContextRequiredError,
     );
-    await expect(client.get("/2/users/1/bookmarks", {}, "user")).rejects.toThrow(/x-api-mcp login/);
+    await expect(client.get("/2/users/1/bookmarks", {}, "user")).rejects.toThrow(/x-mcp login/);
     expect(f).not.toHaveBeenCalled();
   });
 });
@@ -132,9 +132,7 @@ describe("error messages", () => {
       maxRetries: 0,
       baseUrl: "https://x.test",
     });
-    await expect(client.get("/2/tweets")).rejects.toThrow(
-      /X_API_BEARER_TOKEN[\s\S]*x-api-mcp login/,
-    );
+    await expect(client.get("/2/tweets")).rejects.toThrow(/X_BEARER_TOKEN[\s\S]*x-mcp login/);
   });
 
   it("names the enrollment trap first on a 403 — the usual cause, and not a scope problem", async () => {

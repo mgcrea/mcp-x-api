@@ -96,11 +96,11 @@ export const withRetry = async (
   let attempt = 0;
 
   for (;;) {
-    policy.logger?.debug?.(`[x-api] ${policy.label} (attempt ${attempt + 1})`);
+    policy.logger?.debug?.(`[x] ${policy.label} (attempt ${attempt + 1})`);
     const res = await perform();
 
     if (res.status === 401 && policy.onUnauthorized && attempt < policy.maxRetries) {
-      policy.logger?.warn?.(`[x-api] HTTP 401 — refreshing token and retrying`);
+      policy.logger?.warn?.(`[x] HTTP 401 — refreshing token and retrying`);
       policy.onUnauthorized();
       attempt += 1;
       continue;
@@ -108,7 +108,7 @@ export const withRetry = async (
 
     if ((res.status === 429 || res.status >= 500) && attempt < policy.maxRetries) {
       const delay = retryAfterMs(res) ?? backoffMs(attempt);
-      policy.logger?.warn?.(`[x-api] HTTP ${res.status} — retrying in ${delay}ms`);
+      policy.logger?.warn?.(`[x] HTTP ${res.status} — retrying in ${delay}ms`);
       await sleep(delay);
       attempt += 1;
       continue;

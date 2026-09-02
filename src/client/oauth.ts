@@ -100,7 +100,7 @@ const formPost = async (
 
 export const createOAuthClient = (config: Config, fetchImpl: typeof fetch = fetch): OAuthClient => {
   if (!config.clientId) {
-    throw new PreconditionError("X_API_CLIENT_ID is required for the OAuth2 flow.");
+    throw new PreconditionError("X_CLIENT_ID is required for the OAuth2 flow.");
   }
   const clientId = config.clientId;
 
@@ -154,14 +154,14 @@ export const toStoredTokens = (
   ...(opts.username ? { username: opts.username } : {}),
 });
 
-const SUCCESS_PAGE = `<!doctype html><meta charset="utf-8"><title>x-api-mcp</title>
+const SUCCESS_PAGE = `<!doctype html><meta charset="utf-8"><title>x-mcp</title>
 <body style="font-family:system-ui;max-width:32rem;margin:4rem auto;line-height:1.5">
-<h1>Signed in</h1><p>x-api-mcp stored your token. You can close this tab and return to your terminal.</p>
+<h1>Signed in</h1><p>x-mcp stored your token. You can close this tab and return to your terminal.</p>
 </body>`;
 
-const FAILURE_PAGE = `<!doctype html><meta charset="utf-8"><title>x-api-mcp</title>
+const FAILURE_PAGE = `<!doctype html><meta charset="utf-8"><title>x-mcp</title>
 <body style="font-family:system-ui;max-width:32rem;margin:4rem auto;line-height:1.5">
-<h1>Sign-in failed</h1><p>Check the terminal running x-api-mcp for the reason.</p>
+<h1>Sign-in failed</h1><p>Check the terminal running x-mcp for the reason.</p>
 </body>`;
 
 /**
@@ -235,7 +235,7 @@ export const awaitCallback = (opts: {
       err.code === "EADDRINUSE"
         ? new Error(
             `Port ${port} is already in use, so the OAuth callback cannot be received. Free it, ` +
-              `or set X_API_REDIRECT_URI to another loopback URL — and register that exact URL ` +
+              `or set X_REDIRECT_URI to another loopback URL — and register that exact URL ` +
               `in the X developer console at console.x.com, which must match byte for byte.`,
           )
         : err,
@@ -267,7 +267,7 @@ export const startLoginFlow = async (opts: {
   const { config, store } = opts;
   if (!config.clientId) {
     throw new PreconditionError(
-      "X_API_CLIENT_ID is required to log in. Create an OAuth 2.0 app in the X developer " +
+      "X_CLIENT_ID is required to log in. Create an OAuth 2.0 app in the X developer " +
         "portal, enable PKCE, and add this exact callback URL: " +
         config.redirectUri,
     );
@@ -294,7 +294,7 @@ export const startLoginFlow = async (opts: {
   });
 
   // Print before opening: on a headless box the printed URL is the whole flow.
-  opts.logger?.warn?.(`Open this URL to authorize x-api-mcp:\n${authorizeUrl}`);
+  opts.logger?.warn?.(`Open this URL to authorize x-mcp:\n${authorizeUrl}`);
   if (opts.openBrowser) await opts.openBrowser(authorizeUrl);
 
   const code = await listener.code;

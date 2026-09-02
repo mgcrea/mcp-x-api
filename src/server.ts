@@ -27,7 +27,7 @@ import { registerTools } from "#/tools/index";
 
 export const SERVER_NAME = BUILD_INFO.name;
 export const SERVER_VERSION = BUILD_INFO.version;
-export const USER_AGENT = `mcp-x-api-js/${BUILD_INFO.version}`;
+export const USER_AGENT = `mcp-x-js/${BUILD_INFO.version}`;
 
 export type CreateServerOptions = {
   config: Config;

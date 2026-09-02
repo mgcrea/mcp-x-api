@@ -86,7 +86,7 @@ export const registerComposeTools = (
           .boolean()
           .optional()
           .describe(
-            "Open the URL in your browser. Defaults to the server's X_API_AUTO_OPEN_BROWSER " +
+            "Open the URL in your browser. Defaults to the server's X_AUTO_OPEN_BROWSER " +
               "setting. The URL is returned either way.",
           ),
       }),

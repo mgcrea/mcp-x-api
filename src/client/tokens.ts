@@ -61,7 +61,7 @@ export const createTokenStore = (path: string): TokenStore => ({
     } catch {
       // A corrupt token file is recoverable by logging in again, so this is a
       // warning path rather than a fatal one.
-      process.stderr.write(`[x-api] ${path} is not valid JSON — run \`x-api-mcp login\` again.\n`);
+      process.stderr.write(`[x] ${path} is not valid JSON — run \`x-mcp login\` again.\n`);
       return undefined;
     }
 
@@ -102,7 +102,7 @@ export const tokensAreStale = (
 ): { stale: true; reason: string } | { stale: false } => {
   if (!tokens) return { stale: true, reason: "no stored tokens" };
   if (tokens.clientId !== clientId) {
-    return { stale: true, reason: "the stored tokens belong to a different X_API_CLIENT_ID" };
+    return { stale: true, reason: "the stored tokens belong to a different X_CLIENT_ID" };
   }
   const missing = requiredScopes.filter((scope) => !tokens.scopes.includes(scope));
   if (missing.length > 0) {

@@ -26,7 +26,7 @@ type Harness = {
 };
 
 const connect = async (
-  env: Record<string, string> = { X_API_BEARER_TOKEN: "test-bearer" },
+  env: Record<string, string> = { X_BEARER_TOKEN: "test-bearer" },
   fetchImpl?: ReturnType<typeof vi.fn>,
   /**
    * Most tests inject a token provider that satisfies both contexts, so they
@@ -109,9 +109,9 @@ describe("with no credentials configured", () => {
     expect(res.configured).toBe(false);
     expect(res.available_without_credentials).toContain("x_compose_post");
     const setup = (res.setup as string[]).join(" ");
-    expect(setup).toContain("X_API_BEARER_TOKEN");
-    expect(setup).toContain("X_API_CLIENT_ID");
-    expect(setup).toContain("x-api-mcp login");
+    expect(setup).toContain("X_BEARER_TOKEN");
+    expect(setup).toContain("X_CLIENT_ID");
+    expect(setup).toContain("x-mcp login");
   });
 });
 
@@ -145,19 +145,17 @@ describe("tool registration matrix", () => {
   });
 
   it("still hides the paid write tools when allowWrites is on but the backend is intent", async () => {
-    const names = await (
-      await connect({ X_API_BEARER_TOKEN: "t", X_API_ALLOW_WRITES: "1" })
-    ).toolNames();
+    const names = await (await connect({ X_BEARER_TOKEN: "t", X_ALLOW_WRITES: "1" })).toolNames();
     expect(names).not.toContain("x_create_post");
   });
 
   it("registers the paid write tools only when both flags are set", async () => {
     const names = await (
       await connect({
-        X_API_BEARER_TOKEN: "t",
-        X_API_CLIENT_ID: "cid",
-        X_API_ALLOW_WRITES: "1",
-        X_API_WRITE_BACKEND: "api",
+        X_BEARER_TOKEN: "t",
+        X_CLIENT_ID: "cid",
+        X_ALLOW_WRITES: "1",
+        X_WRITE_BACKEND: "api",
       })
     ).toolNames();
     expect(names).toContain("x_create_post");
@@ -167,13 +165,13 @@ describe("tool registration matrix", () => {
   // The inversion that is the point of the design: the free path is never gated.
   it("registers x_compose_post in every mode, including the most locked-down one", async () => {
     const modes: Record<string, string>[] = [
-      { X_API_BEARER_TOKEN: "t" },
-      { X_API_BEARER_TOKEN: "t", X_API_ALLOW_WRITES: "0" },
+      { X_BEARER_TOKEN: "t" },
+      { X_BEARER_TOKEN: "t", X_ALLOW_WRITES: "0" },
       {
-        X_API_BEARER_TOKEN: "t",
-        X_API_CLIENT_ID: "c",
-        X_API_ALLOW_WRITES: "1",
-        X_API_WRITE_BACKEND: "api",
+        X_BEARER_TOKEN: "t",
+        X_CLIENT_ID: "c",
+        X_ALLOW_WRITES: "1",
+        X_WRITE_BACKEND: "api",
       },
     ];
     for (const env of modes) {
@@ -196,9 +194,7 @@ describe("tool registration matrix", () => {
   });
 
   it("registers the login and user-context tools once a client id is configured", async () => {
-    const names = await (
-      await connect({ X_API_BEARER_TOKEN: "t", X_API_CLIENT_ID: "cid" })
-    ).toolNames();
+    const names = await (await connect({ X_BEARER_TOKEN: "t", X_CLIENT_ID: "cid" })).toolNames();
     for (const tool of [
       "x_auth_login",
       "x_auth_logout",
@@ -211,7 +207,7 @@ describe("tool registration matrix", () => {
 
   it("hides x_search_all unless full-archive access is enabled", async () => {
     expect(await (await connect()).toolNames()).not.toContain("x_search_all");
-    const enabled = await connect({ X_API_BEARER_TOKEN: "t", X_API_ENABLE_FULL_ARCHIVE: "1" });
+    const enabled = await connect({ X_BEARER_TOKEN: "t", X_ENABLE_FULL_ARCHIVE: "1" });
     expect(await enabled.toolNames()).toContain("x_search_all");
   });
 });
@@ -219,10 +215,10 @@ describe("tool registration matrix", () => {
 describe("tool annotations", () => {
   it("marks reads read-only and deletes destructive", async () => {
     const h = await connect({
-      X_API_BEARER_TOKEN: "t",
-      X_API_CLIENT_ID: "c",
-      X_API_ALLOW_WRITES: "1",
-      X_API_WRITE_BACKEND: "api",
+      X_BEARER_TOKEN: "t",
+      X_CLIENT_ID: "c",
+      X_ALLOW_WRITES: "1",
+      X_WRITE_BACKEND: "api",
     });
     const tools = (await h.client.listTools()).tools;
     const byName = new Map(tools.map((t) => [t.name, t.annotations]));
@@ -491,7 +487,7 @@ describe("x_usage_report", () => {
   });
 
   it("reports budget headroom when one is configured", async () => {
-    const h = await connect({ X_API_BEARER_TOKEN: "t", X_API_MONTHLY_BUDGET_USD: "1" });
+    const h = await connect({ X_BEARER_TOKEN: "t", X_MONTHLY_BUDGET_USD: "1" });
     const report = await h.call("x_usage_report");
     expect(report.budget).toEqual({ limit_usd: 1, remaining_usd: 1 });
   });
@@ -500,13 +496,10 @@ describe("x_usage_report", () => {
 describe("budget guard", () => {
   it("refuses a search that would cross the ceiling, before spending anything", async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ data: [] }));
-    const h = await connect(
-      { X_API_BEARER_TOKEN: "t", X_API_MONTHLY_BUDGET_USD: "0.01" },
-      fetchMock,
-    );
+    const h = await connect({ X_BEARER_TOKEN: "t", X_MONTHLY_BUDGET_USD: "0.01" }, fetchMock);
     const res = await h.call("x_search_recent", { query: "rust", maxResults: 100 });
     expect(res.isToolError).toBe(true);
-    expect(res.error).toMatch(/X_API_MONTHLY_BUDGET_USD/);
+    expect(res.error).toMatch(/X_MONTHLY_BUDGET_USD/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -521,7 +514,7 @@ describe("x_rate_limit_status", () => {
 
 describe("x_auth_status", () => {
   it("reports a bearer-only install as able to read publicly but not bookmarks", async () => {
-    const h = await connect({ X_API_BEARER_TOKEN: "t" }, undefined, { realAuth: true });
+    const h = await connect({ X_BEARER_TOKEN: "t" }, undefined, { realAuth: true });
     const res = await h.call("x_auth_status");
     expect(res.app_only_bearer).toBe(true);
     expect(res.user.authenticated).toBe(false);
@@ -533,7 +526,7 @@ describe("x_auth_status", () => {
 describe("resolving your own user id", () => {
   /** Stage a logged-in OAuth session on disk, optionally without a recorded id. */
   const stageSession = (over: Record<string, unknown> = {}) => {
-    const dir = mkdtempSync(join(tmpdir(), "x-api-tools-"));
+    const dir = mkdtempSync(join(tmpdir(), "x-tools-"));
     const tokenFile = join(dir, "tokens.json");
     writeFileSync(
       tokenFile,
@@ -554,9 +547,9 @@ describe("resolving your own user id", () => {
   };
 
   const env = (tokenFile: string) => ({
-    X_API_BEARER_TOKEN: "t",
-    X_API_CLIENT_ID: "cid",
-    X_API_TOKEN_FILE: tokenFile,
+    X_BEARER_TOKEN: "t",
+    X_CLIENT_ID: "cid",
+    X_TOKEN_FILE: tokenFile,
   });
 
   // The dead end this replaced: login tolerates /2/users/me failing, so the id
@@ -633,17 +626,17 @@ describe("user-context tools", () => {
     const fetchMock = vi.fn(async () => jsonResponse({ data: [] }));
     const h = await connect(
       {
-        X_API_BEARER_TOKEN: "t",
-        X_API_CLIENT_ID: "cid",
+        X_BEARER_TOKEN: "t",
+        X_CLIENT_ID: "cid",
         // Point at a token file that does not exist: nobody has logged in.
-        X_API_TOKEN_FILE: "/nonexistent/x-api-tokens.json",
+        X_TOKEN_FILE: "/nonexistent/x-tokens.json",
       },
       fetchMock,
       { realAuth: true },
     );
     const res = await h.call("x_get_bookmarks", {});
     expect(res.isToolError).toBe(true);
-    expect(res.error).toMatch(/x-api-mcp login/);
+    expect(res.error).toMatch(/x-mcp login/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -679,7 +672,7 @@ describe("x_get_user", () => {
  * untouched: neither of their environments enables ads, so a correct
  * implementation cannot change them.
  */
-const ADS_READ = { X_API_CLIENT_ID: "cid", X_ADS_ENABLED: "1" };
+const ADS_READ = { X_CLIENT_ID: "cid", X_ADS_ENABLED: "1" };
 const ADS_WRITE = { ...ADS_READ, X_ADS_ALLOW_WRITES: "1" };
 const ADS_SANDBOX = { ...ADS_WRITE, X_ADS_BASE_URL: "https://ads-api-sandbox.twitter.com" };
 
@@ -689,8 +682,8 @@ const adsNames = async (env: Record<string, string>): Promise<string[]> =>
 describe("ads tool registration", () => {
   // Cheap, and it keeps holding as ads tools are added later.
   it("registers no ads tools at all unless X_ADS_ENABLED is set", async () => {
-    expect(await adsNames({ X_API_BEARER_TOKEN: "t" })).toEqual([]);
-    expect(await adsNames({ X_API_BEARER_TOKEN: "t", X_API_CLIENT_ID: "cid" })).toEqual([]);
+    expect(await adsNames({ X_BEARER_TOKEN: "t" })).toEqual([]);
+    expect(await adsNames({ X_BEARER_TOKEN: "t", X_CLIENT_ID: "cid" })).toEqual([]);
   });
 
   it("registers the ads reads, and none of the writes, when only enabled", async () => {
@@ -742,19 +735,19 @@ describe("ads tool registration", () => {
   it("refuses to start when ads is enabled without a user context", () => {
     // A Bearer token cannot reach /12/accounts at all, so this is a
     // configuration error rather than something to discover per call.
-    expect(() => loadConfig({ X_API_BEARER_TOKEN: "t", X_ADS_ENABLED: "1" }, ABSENT)).toThrow(
-      /X_API_CLIENT_ID/,
+    expect(() => loadConfig({ X_BEARER_TOKEN: "t", X_ADS_ENABLED: "1" }, ABSENT)).toThrow(
+      /X_CLIENT_ID/,
     );
   });
 
   it("refuses ads writes that are switched on without ads itself", () => {
-    expect(() => loadConfig({ X_API_CLIENT_ID: "c", X_ADS_ALLOW_WRITES: "1" }, ABSENT)).toThrow(
+    expect(() => loadConfig({ X_CLIENT_ID: "c", X_ADS_ALLOW_WRITES: "1" }, ABSENT)).toThrow(
       /X_ADS_ENABLED/,
     );
   });
 
   it("asks for the ads scopes only when the matching tools exist", () => {
-    expect(effectiveScopes(loadConfig({ X_API_CLIENT_ID: "c" }, ABSENT))).not.toContain("ads.read");
+    expect(effectiveScopes(loadConfig({ X_CLIENT_ID: "c" }, ABSENT))).not.toContain("ads.read");
     const read = effectiveScopes(loadConfig(ADS_READ, ABSENT));
     expect(read).toContain("ads.read");
     expect(read).not.toContain("ads.write");

@@ -1,5 +1,5 @@
 {
-  "name": "@mgcrea/mcp-x-api",
+  "name": "@mgcrea/mcp-x",
   "version": "0.1.2",
   "description": "Model Context Protocol server for the X (Twitter) API v2",
   "keywords": [
@@ -7,17 +7,16 @@
     "model-context-protocol",
     "twitter",
     "twitter-api",
-    "x",
-    "x-api"
+    "x"
   ],
   "license": "MIT",
   "author": "Olivier Louvignes <olivier@mgcrea.io>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mgcrea/mcp-x-api.git"
+    "url": "git+https://github.com/mgcrea/mcp-x.git"
   },
   "bin": {
-    "x-api-mcp": "dist/cli.js"
+    "x-mcp": "dist/cli.js"
   },
   "files": [
     "dist"
@@ -52,7 +51,7 @@
     "release": "pnpm dlx release-it",
     "docker:build": "BUILDER=build scripts/docker-build.sh",
     "docker:buildx": "BUILDER=buildx scripts/docker-build.sh",
-    "docker:push": "docker push mgcrea/mcp-x-api:latest && docker push mgcrea/mcp-x-api:$npm_package_version",
+    "docker:push": "docker push mgcrea/mcp-x:latest && docker push mgcrea/mcp-x:$npm_package_version",
     "docker:release": "BUILDER=buildx scripts/docker-build.sh --push",
     "prepublishOnly": "pnpm build"
   },

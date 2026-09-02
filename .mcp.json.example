@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "x-api": {
+    "x": {
       "command": "npx",
-      "args": ["-y", "@mgcrea/mcp-x-api"],
+      "args": ["-y", "@mgcrea/mcp-x"],
       "env": {
-        "X_API_BEARER_TOKEN": "your-app-only-bearer-token",
-        "X_API_DEFAULT_MAX_RESULTS": "10",
-        "X_API_MONTHLY_BUDGET_USD": "25"
+        "X_BEARER_TOKEN": "your-app-only-bearer-token",
+        "X_DEFAULT_MAX_RESULTS": "10",
+        "X_MONTHLY_BUDGET_USD": "25"
       }
     }
   }

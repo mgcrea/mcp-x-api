@@ -51,7 +51,7 @@ jobs:
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-          | X_API_CONFIG=/nonexistent.json X_API_BEARER_TOKEN=ci-fake node dist/cli.js 2>/dev/null \
+          | X_CONFIG=/nonexistent.json X_BEARER_TOKEN=ci-fake node dist/cli.js 2>/dev/null \
           > /tmp/tools.json
           grep -q 'x_compose_post' /tmp/tools.json || { echo "MCP smoke test failed"; exit 1; }
           # The negative half of the same promise: a capability that was not
@@ -85,6 +85,11 @@ jobs:
         run: npm install -g npm@latest
       - name: Publish 🚀
         run: npm publish --provenance --access public
+        # TEMPORARY (remove after the first publish under this name): npm cannot attach a
+        # trusted publisher to a package that does not exist yet, so the very first release
+        # bootstraps the record with a token. id-token: write above still supplies provenance.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   github-release:
     name: GitHub Release

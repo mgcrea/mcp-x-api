@@ -42,20 +42,20 @@ export class UserContextRequiredError extends Error {
   constructor(what: string, reason?: string) {
     super(
       `${what} needs an OAuth2 user context — an app-only Bearer token cannot reach it. ` +
-        `Set X_API_CLIENT_ID and run \`x-api-mcp login\` once (it opens a browser and stores a ` +
+        `Set X_CLIENT_ID and run \`x-mcp login\` once (it opens a browser and stores a ` +
         `refresh token in your config directory with mode 600), then retry.` +
         (reason ? ` (${reason})` : ""),
     );
   }
 }
 
-/** Thrown when a write tool is reached while X_API_ALLOW_WRITES is off. */
+/** Thrown when a write tool is reached while X_ALLOW_WRITES is off. */
 export class WritesDisabledError extends Error {
   override readonly name = "WritesDisabledError";
 
   constructor(what: string) {
     super(
-      `${what} is a write operation, but writes are disabled. Set X_API_ALLOW_WRITES=1 to enable ` +
+      `${what} is a write operation, but writes are disabled. Set X_ALLOW_WRITES=1 to enable ` +
         `mutating tools. Note that x_compose_post posts for free via a web intent and needs no ` +
         `flag at all.`,
     );
@@ -91,7 +91,7 @@ export class BudgetExceededError extends Error {
     super(
       `${opts.what} would cost about $${opts.estimateUsd.toFixed(3)}, which takes this session ` +
         `past the $${opts.limitUsd.toFixed(2)} budget (about $${opts.spentUsd.toFixed(3)} spent ` +
-        `so far). Raise or unset X_API_MONTHLY_BUDGET_USD, or ask for fewer results.`,
+        `so far). Raise or unset X_MONTHLY_BUDGET_USD, or ask for fewer results.`,
     );
     this.details = { ...opts };
   }

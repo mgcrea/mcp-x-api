@@ -91,13 +91,13 @@ describe("error messages", () => {
   it("reads the gateway's legacy numeric envelope and blames the token, not the scopes", async () => {
     await expect(
       failing(400, { errors: [{ message: "Bad Authentication data", code: 215 }] }),
-    ).rejects.toThrow(/gateway rejected the credentials.*x-api-mcp login/s);
+    ).rejects.toThrow(/gateway rejected the credentials.*x-mcp login/s);
   });
 
   it("tells a 401 to log in again rather than to re-check the scopes", async () => {
     await expect(
       failing(401, { errors: [{ code: "UNAUTHORIZED_ACCESS", message: "not authenticated" }] }),
-    ).rejects.toThrow(/predates your Ads API approval.*x-api-mcp login/s);
+    ).rejects.toThrow(/predates your Ads API approval.*x-mcp login/s);
   });
 
   // Verified against the live API: one token gets 200 from ads-api.x.com/mcp and

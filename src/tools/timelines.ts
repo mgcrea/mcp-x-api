@@ -38,7 +38,7 @@ const resolveOwnUserId = async (client: XApiClient, ctx: ToolContext): Promise<s
     throw new UserContextRequiredError(
       "This tool",
       "X did not return your account id from /2/users/me, so there is no way to identify whose " +
-        "timeline to read. Re-run `x-api-mcp login`, and check the app is enrolled in the " +
+        "timeline to read. Re-run `x-mcp login`, and check the app is enrolled in the " +
         "Pay-per-use package and Production environment at console.x.com",
     );
   }
@@ -67,7 +67,7 @@ export const registerTimelineTools = (
       title: "X: Get Home Timeline",
       description:
         "Your own reverse-chronological home timeline — the posts from accounts you follow. " +
-        "Requires `x-api-mcp login`; X only ever serves this for the authenticated account, so " +
+        "Requires `x-mcp login`; X only ever serves this for the authenticated account, so " +
         "there is no way to read someone else's. Billed at the cheaper owned-read rate.",
       inputSchema: z.object({
         maxResults: maxResultsArg,
@@ -119,7 +119,7 @@ export const registerTimelineTools = (
     {
       title: "X: Get Bookmarks",
       description:
-        "Your saved bookmarks, newest first. Requires `x-api-mcp login` with the " +
+        "Your saved bookmarks, newest first. Requires `x-mcp login` with the " +
         "`bookmark.read` scope — an app-only Bearer token cannot reach bookmarks at all.",
       inputSchema: z.object({
         maxResults: maxResultsArg,

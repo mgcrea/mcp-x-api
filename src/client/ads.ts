@@ -92,7 +92,7 @@ export class AdsApiClient {
     this.maxDownloadBytes = opts.maxDownloadBytes ?? 25_000_000;
     this.fetchImpl = opts.fetch ?? fetch;
     this.logger = opts.logger;
-    this.userAgent = opts.userAgent ?? "mcp-x-api-js";
+    this.userAgent = opts.userAgent ?? "mcp-x-js";
   }
 
   rateLimitStatus(): RateLimitSnapshot[] {
@@ -330,13 +330,13 @@ export class AdsApiClient {
     if (res.status === 400 && /"code":\s*2\d\d/.test(text)) {
       return (
         `${base} — X's gateway rejected the credentials outright. The access token is missing or ` +
-        `malformed; run \`x-api-mcp login\` again${suffix}`
+        `malformed; run \`x-mcp login\` again${suffix}`
       );
     }
     if (res.status === 401) {
       return (
         `${base} — authenticated request refused. Most often the stored token predates your Ads ` +
-        `API approval, or was minted before ads.read was in scope: run \`x-api-mcp login\` again ` +
+        `API approval, or was minted before ads.read was in scope: run \`x-mcp login\` again ` +
         `so the new token carries the ads scopes${suffix}`
       );
     }
@@ -352,7 +352,7 @@ export class AdsApiClient {
         `Attaching the Ads Project at console.x.com is only half of it: that switch enables X's ` +
         `hosted Ads MCP, while these /12/ endpoints additionally need X's Ads API Access Form to ` +
         `be approved, which is a human review rather than a toggle. Once it is granted, run ` +
-        `\`x-api-mcp login\` again — a token minted before approval does not carry it` +
+        `\`x-mcp login\` again — a token minted before approval does not carry it` +
         suffix
       );
     }

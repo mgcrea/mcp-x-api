@@ -1,8 +1,8 @@
-# @mgcrea/mcp-x-api
+# @mgcrea/mcp-x
 
-[![npm version](https://img.shields.io/npm/v/@mgcrea/mcp-x-api.svg)](https://www.npmjs.com/package/@mgcrea/mcp-x-api)
-[![ci](https://github.com/mgcrea/mcp-x-api/actions/workflows/ci.yml/badge.svg)](https://github.com/mgcrea/mcp-x-api/actions/workflows/ci.yml)
-[![license](https://img.shields.io/npm/l/@mgcrea/mcp-x-api.svg)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/@mgcrea/mcp-x.svg)](https://www.npmjs.com/package/@mgcrea/mcp-x)
+[![ci](https://github.com/mgcrea/mcp-x/actions/workflows/ci.yml/badge.svg)](https://github.com/mgcrea/mcp-x/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/@mgcrea/mcp-x.svg)](./LICENSE)
 
 Model Context Protocol server for the **X (Twitter) API v2** — built for reading and searching posts.
 
@@ -34,7 +34,7 @@ Credits are prepurchased in the developer console; at zero credits, requests are
 
 1. **`maxResults` defaults to 10, not 50.** A 100-result search is about $0.50.
 2. **Repeat reads are free.** X deduplicates per resource id within a UTC calendar day, so the built-in cache mirrors that exactly — a cache hit is genuinely free, not merely fast.
-3. **Posting should not cost anything.** `x_compose_post` is the default write path and uses a web intent. The paid `x_create_post` stays unregistered unless you opt in twice (`X_API_ALLOW_WRITES=1` **and** `X_API_WRITE_BACKEND=api`).
+3. **Posting should not cost anything.** `x_compose_post` is the default write path and uses a web intent. The paid `x_create_post` stays unregistered unless you opt in twice (`X_ALLOW_WRITES=1` **and** `X_WRITE_BACKEND=api`).
 
 Run `x_count_recent` before a broad search — it returns totals without reading any posts, so it costs nothing and tells you what the search would cost. `x_build_search_query` is likewise free and local.
 
@@ -57,7 +57,7 @@ Run `x_count_recent` before a broad search — it returns totals without reading
 To read anything, one variable is required:
 
 ```bash
-export X_API_BEARER_TOKEN="..."   # console.x.com → your app → Keys and Tokens
+export X_BEARER_TOKEN="..."   # console.x.com → your app → Keys and Tokens
 ```
 
 That covers every public read: lookup, search, profiles, timelines — no OAuth needed. See [Getting credentials](#getting-credentials) below, and [.env.example](./.env.example) for the rest.
@@ -84,8 +84,8 @@ Creating an app and getting credentials appears to be free; **making calls is no
 **OAuth 2.0** is needed only for bookmarks, your home timeline, and API writes:
 
 ```bash
-export X_API_CLIENT_ID="..."      # the Client ID of a Native App (public PKCE client)
-npx @mgcrea/mcp-x-api login       # opens a browser, stores a refresh token (mode 600)
+export X_CLIENT_ID="..."      # the Client ID of a Native App (public PKCE client)
+npx @mgcrea/mcp-x login       # opens a browser, stores a refresh token (mode 600)
 ```
 
 ### Ads API access
@@ -94,7 +94,7 @@ The Ads API is a separate product behind a separate approval, even though it use
 
 1. At [console.x.com](https://console.x.com), open the app → **Project Access** → **MANAGE** → select **Ads Project**. This attaches Ads API access to the app id.
 2. Request Ads API access for that app using X's **Ads API Access Form**. Standard Access covers campaigns, creatives, audiences and analytics.
-3. Once approved, run `x-api-mcp login` **again**, then set `X_ADS_ENABLED=1`.
+3. Once approved, run `x-mcp login` **again**, then set `X_ADS_ENABLED=1`.
 
 > **The regenerate trap.** A token minted _before_ your Ads API approval does not carry the entitlement. It logs in fine, reads posts fine, and then fails every ads call — which reads as a scope problem and is not one. If ads calls fail right after approval, log in again before debugging anything else.
 
@@ -112,7 +112,7 @@ Campaigns and line items are created `PAUSED` unless a call passes `activateImme
 
 ### Config file
 
-Instead of environment variables, use `~/.config/x-api/config.json` (camelCase keys, the env names minus the `X_API_` prefix). Environment wins **per field**, so a one-off `X_API_ALLOW_WRITES=0` still overrides a file that says `true`. Unknown keys are an error rather than silently ignored.
+Instead of environment variables, use `~/.config/x/config.json` (camelCase keys, the env names minus the `X_` prefix). Environment wins **per field**, so a one-off `X_ALLOW_WRITES=0` still overrides a file that says `true`. Unknown keys are an error rather than silently ignored.
 
 ```json
 {
@@ -129,10 +129,10 @@ Instead of environment variables, use `~/.config/x-api/config.json` (camelCase k
 ```json
 {
   "mcpServers": {
-    "x-api": {
+    "x": {
       "command": "npx",
-      "args": ["-y", "@mgcrea/mcp-x-api"],
-      "env": { "X_API_BEARER_TOKEN": "..." }
+      "args": ["-y", "@mgcrea/mcp-x"],
+      "env": { "X_BEARER_TOKEN": "..." }
     }
   }
 }
@@ -143,10 +143,10 @@ Instead of environment variables, use `~/.config/x-api/config.json` (camelCase k
 ```json
 {
   "mcpServers": {
-    "x-api": {
+    "x": {
       "command": "docker",
-      "args": ["run", "--rm", "-i", "-e", "X_API_BEARER_TOKEN", "ghcr.io/mgcrea/mcp-x-api"],
-      "env": { "X_API_BEARER_TOKEN": "..." }
+      "args": ["run", "--rm", "-i", "-e", "X_BEARER_TOKEN", "ghcr.io/mgcrea/mcp-x"],
+      "env": { "X_BEARER_TOKEN": "..." }
     }
   }
 }
@@ -156,13 +156,13 @@ Instead of environment variables, use `~/.config/x-api/config.json` (camelCase k
 
 ```bash
 pnpm install && pnpm build
-X_API_BEARER_TOKEN=... node dist/cli.js
+X_BEARER_TOKEN=... node dist/cli.js
 ```
 
 **Inspect the tools**
 
 ```bash
-X_API_BEARER_TOKEN=... npx @modelcontextprotocol/inspector node dist/cli.js
+X_BEARER_TOKEN=... npx @modelcontextprotocol/inspector node dist/cli.js
 ```
 
 ## Tools
@@ -173,13 +173,13 @@ Writes are marked `*`, and `†` means a `confirm: true` argument is required. T
 
 **Users** — `x_get_user` · `x_get_users` · `x_get_user_posts` · `x_get_user_mentions`
 
-**Search** — `x_search_recent` · `x_count_recent` (free — totals only) · `x_build_search_query` (free — local) · `x_search_all` _(needs `X_API_ENABLE_FULL_ARCHIVE`)_
+**Search** — `x_search_recent` · `x_count_recent` (free — totals only) · `x_build_search_query` (free — local) · `x_search_all` _(needs `X_ENABLE_FULL_ARCHIVE`)_
 
-**Compose** — `x_validate_post` (free, local) · `x_compose_post` (free, web intent) · `x_create_post` \*† · `x_delete_post` \*† _(the last two need `X_API_ALLOW_WRITES=1` **and** `X_API_WRITE_BACKEND=api`)_
+**Compose** — `x_validate_post` (free, local) · `x_compose_post` (free, web intent) · `x_create_post` \*† · `x_delete_post` \*† _(the last two need `X_ALLOW_WRITES=1` **and** `X_WRITE_BACKEND=api`)_
 
 **Timelines** — `x_get_home_timeline` · `x_get_bookmarks` _(need OAuth login; X serves these for your own account only)_
 
-**Auth** — `x_auth_status` · `x_auth_login` \* · `x_auth_logout` \*† _(the last two need `X_API_CLIENT_ID`)_
+**Auth** — `x_auth_status` · `x_auth_login` \* · `x_auth_logout` \*† _(the last two need `X_CLIENT_ID`)_
 
 **Ads — reads** — `x_ads_get_accounts` · `x_ads_get_funding_instruments` · `x_ads_get_campaigns` · `x_ads_get_line_items` · `x_ads_get_promoted_tweets` · `x_ads_get_targeting_criteria` · `x_ads_search_targeting_options` · `x_ads_get_audiences` · `x_ads_get_stats` · `x_ads_create_stats_job` · `x_ads_get_stats_jobs` · `x_ads_download_stats_job` _(need `X_ADS_ENABLED` and an OAuth login)_
 
@@ -238,13 +238,13 @@ The URL comes back whether or not a browser could be opened, so Docker and SSH b
 
 **`MCP error -32000: Connection closed`** — the server process died on startup. It does _not_ do this for missing credentials (see [Configure](#configure)), so check, in order:
 
-1. The command actually resolves. `@mgcrea/mcp-x-api` must be published for the `npx` form to work; while developing, point at a built file: `"command": "node", "args": ["/absolute/path/to/dist/cli.js"]`. A relative `./dist/cli.js` depends on the client's working directory.
+1. The command actually resolves. `@mgcrea/mcp-x` must be published for the `npx` form to work; while developing, point at a built file: `"command": "node", "args": ["/absolute/path/to/dist/cli.js"]`. A relative `./dist/cli.js` depends on the client's working directory.
 2. You ran `pnpm build` — `dist/cli.js` has to exist.
-3. Run it by hand to see stderr, which MCP clients swallow: `X_API_BEARER_TOKEN=... node dist/cli.js`. A config error prints one readable line; add `X_API_DEBUG=1` for the stack.
+3. Run it by hand to see stderr, which MCP clients swallow: `X_BEARER_TOKEN=... node dist/cli.js`. A config error prints one readable line; add `X_DEBUG=1` for the stack.
 
 **Only four tools show up** — no credentials are configured. Call `x_auth_status`; it returns the setup steps.
 
-**I want OAuth but see no way in** — OAuth needs an app you register. See [Getting credentials](#getting-credentials): create a **Native App** at console.x.com, set `X_API_CLIENT_ID` to its Client ID, register the callback, then run `npx @mgcrea/mcp-x-api login` (or call `x_auth_login`). There is no way to log in without a client id — X has nothing to authorize against.
+**I want OAuth but see no way in** — OAuth needs an app you register. See [Getting credentials](#getting-credentials): create a **Native App** at console.x.com, set `X_CLIENT_ID` to its Client ID, register the callback, then run `npx @mgcrea/mcp-x login` (or call `x_auth_login`). There is no way to log in without a client id — X has nothing to authorize against.
 
 **`403 client-not-enrolled` right after a successful login** — the app is in the legacy Free package or the Development environment. Move it to **Pay-per-use / Production** at console.x.com. Nothing about your token or scopes is wrong.
 
@@ -252,7 +252,7 @@ The URL comes back whether or not a browser could be opened, so Docker and SSH b
 
 ## Notes
 
-- **Recent search reaches back 7 days.** `x_get_thread` inherits that limit: an older conversation returns only its root post. Full-archive search (back to March 2006) needs a paid tier and `X_API_ENABLE_FULL_ARCHIVE=1`, and is capped at one request per second.
+- **Recent search reaches back 7 days.** `x_get_thread` inherits that limit: an older conversation returns only its root post. Full-archive search (back to March 2006) needs a paid tier and `X_ENABLE_FULL_ARCHIVE=1`, and is capped at one request per second.
 - **Bookmarks and the home timeline are self-only.** X does not serve anyone else's, so those tools take no user argument — the id comes from your token.
 - **Rate limits are per endpoint and per credential**, not per plan: recent search allows 450 requests / 15 min app-only vs 300 with a user token. `x_rate_limit_status` shows the headroom X last reported.
 - **Search asks for at least 10 results.** X's minimum for `max_results` is 10, so a request for 3 fetches 10 and returns 3. Billing follows what X actually returned.
@@ -279,9 +279,9 @@ pnpm dlx release-it          # tags vX.Y.Z; CI publishes to npm and GHCR
 ### Verify a release
 
 ```bash
-npm view @mgcrea/mcp-x-api --json | jq .dist.attestations
-cosign verify ghcr.io/mgcrea/mcp-x-api:latest \
-  --certificate-identity-regexp 'https://github.com/mgcrea/mcp-x-api/.*' \
+npm view @mgcrea/mcp-x --json | jq .dist.attestations
+cosign verify ghcr.io/mgcrea/mcp-x:latest \
+  --certificate-identity-regexp 'https://github.com/mgcrea/mcp-x/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
